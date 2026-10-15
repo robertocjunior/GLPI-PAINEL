@@ -8,20 +8,25 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
+
+	"glpi-painel/internal/config"
 )
 
 var (
-	mu            sync.RWMutex
-	customSound   []byte
-	criticalSound []byte
-	customFile    = filepath.Join("data", "custom_sound.mp3")
-	criticalFile  = filepath.Join("data", "critical_sound.mp3")
+	mu             sync.RWMutex
+	customSound    []byte
+	criticalSound  []byte
+	categorySounds = make(map[int][]byte) // index -> bytes
+	customFile     = filepath.Join("data", "custom_sound.mp3")
+	criticalFile   = filepath.Join("data", "critical_sound.mp3")
 )
 
 // Init inicializa os sons customizados: baixa caso haja URLs configuradas.
-func Init(defaultSoundURL, critSoundURL string) {
+func Init(defaultSoundURL, critSoundURL string, catRules []config.CategorySoundRule) {
 	if defaultSoundURL != "" {
 		data := downloadSound("padrão", defaultSoundURL, customFile)
 		if len(data) > 0 {
@@ -42,6 +47,16 @@ func Init(defaultSoundURL, critSoundURL string) {
 		}
 	} else {
 		slog.Info("Nenhum som crítico configurado (CRITICAL_SOUND_URL vazio). Usando som sintetizado de alerta crítico.")
+	}
+
+	for _, rule := range catRules {
+		cachePath := filepath.Join("data", fmt.Sprintf("category_sound_%d.mp3", rule.Index))
+		data := downloadSound(fmt.Sprintf("categoria [%s]", rule.Category), rule.SoundURL, cachePath)
+		if len(data) > 0 {
+			mu.Lock()
+			categorySounds[rule.Index] = data
+			mu.Unlock()
+		}
 	}
 }
 
@@ -119,6 +134,34 @@ func CriticalHandler(w http.ResponseWriter, r *http.Request) {
 	mu.RUnlock()
 
 	if len(data) == 0 {
+		http.NotFound(w, r)
+		return
+	}
+
+	w.Header().Set("Content-Type", "audio/mpeg")
+	w.Header().Set("Content-Length", fmt.Sprintf("%d", len(data)))
+	w.Header().Set("Cache-Control", "public, max-age=3600")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write(data)
+}
+
+// CategoryHandler HTTP para servir o som de categoria pelo índice /api/sound/category/{id}.mp3
+func CategoryHandler(w http.ResponseWriter, r *http.Request) {
+	path := r.URL.Path
+	// ex: /api/sound/category/0.mp3
+	trimmed := strings.TrimPrefix(path, "/api/sound/category/")
+	idStr := strings.TrimSuffix(trimmed, ".mp3")
+	idx, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	mu.RLock()
+	data, ok := categorySounds[idx]
+	mu.RUnlock()
+
+	if !ok || len(data) == 0 {
 		http.NotFound(w, r)
 		return
 	}

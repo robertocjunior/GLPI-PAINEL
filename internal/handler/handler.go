@@ -54,6 +54,7 @@ func (h *APIHandler) HandleTickets(w http.ResponseWriter, r *http.Request) {
 		"refresh_interval":   h.Config.RefreshIntervalSec,
 		"has_custom_sound":   h.Config.NotificationSoundURL != "",
 		"has_critical_sound": h.Config.CriticalSoundURL != "",
+		"category_sounds":    h.Config.CategorySounds,
 		"data":               tickets,
 	})
 }

@@ -46,6 +46,7 @@ type Ticket struct {
 	Priority       string `json:"priority"`
 	UrgencyID      int    `json:"urgency_id"`
 	Category       string `json:"category"`
+	CategoryFull   string `json:"category_full"`
 	TechnicalGroup string `json:"technical_group"`
 	RequesterID    string `json:"requester_id"`
 	RequesterUser  string `json:"requester_user"`
@@ -236,6 +237,7 @@ func (c *Client) FetchTickets(ctx context.Context, limit int) ([]Ticket, error) 
 			Priority:       mapPriority(priorityVal),
 			UrgencyID:      urgencyVal,
 			Category:       catClean,
+			CategoryFull:   cat,
 			TechnicalGroup: parseString(item["8"]),
 			RequesterID:    parseString(item["4"]),
 			RequesterUser:  reqUserDisplayName,

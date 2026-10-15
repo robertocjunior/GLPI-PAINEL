@@ -85,7 +85,7 @@ func main() {
 	slog.Info("Configurações carregadas", "glpi_url", cfg.GlpiURL, "tech_group", cfg.TechnicalGroup)
 
 	// Inicializa e baixa sons customizados se configurados
-	sound.Init(cfg.NotificationSoundURL, cfg.CriticalSoundURL)
+	sound.Init(cfg.NotificationSoundURL, cfg.CriticalSoundURL, cfg.CategorySounds)
 
 	glpiClient := glpi.NewClient(cfg)
 
@@ -100,6 +100,7 @@ func main() {
 	mux.HandleFunc("/api/tickets", apiHandler.HandleTickets)
 	mux.HandleFunc("/api/sound/notification.mp3", sound.Handler)
 	mux.HandleFunc("/api/sound/critical.mp3", sound.CriticalHandler)
+	mux.HandleFunc("/api/sound/category/", sound.CategoryHandler)
 	mux.HandleFunc("/health", apiHandler.HandleHealth)
 
 	// Servir frontend estático embutido

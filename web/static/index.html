@@ -415,6 +415,8 @@
 
     let customAudioElement = null;
     let criticalAudioElement = null;
+    let categoryAudioElements = {};
+    let categoryRules = [];
     let hasCustomSoundConfigured = false;
     let hasCriticalSoundConfigured = false;
 
@@ -436,10 +438,55 @@
       return criticalAudioElement;
     }
 
-    // Sinal sonoro de notificação: decide entre crítico ou normal
-    function playNotificationSound(isCritical, force) {
+    // Retorna o elemento de áudio para uma regra de categoria
+    function getCategoryAudio(ruleIndex) {
+      if (!categoryAudioElements[ruleIndex]) {
+        const audio = new Audio('/api/sound/category/' + ruleIndex + '.mp3');
+        audio.preload = 'auto';
+        categoryAudioElements[ruleIndex] = audio;
+      }
+      return categoryAudioElements[ruleIndex];
+    }
+
+    // Sinal sonoro de notificação: verifica categoria correspondente primeiro, depois crítico, depois normal
+    function playNotificationSound(newTickets, isCritical, force) {
       if (!soundEnabled && !force) return;
 
+      // 1. Procura se algum chamado recém-chegado coincide com as regras de categoria
+      if (newTickets && newTickets.length > 0 && categoryRules && categoryRules.length > 0) {
+        for (const t of newTickets) {
+          const cat = (t.category || '').toLowerCase().trim();
+          const catFull = (t.category_full || '').toLowerCase().trim();
+
+          for (const rule of categoryRules) {
+            const ruleCat = (rule.category || '').toLowerCase().trim();
+            if (!ruleCat) continue;
+
+            // Coincidência exata ou parcial (ex: "Perda / Roubo" contido em "Equipamentos e Acessórios > Perda / Roubo")
+            if (cat === ruleCat || catFull === ruleCat || cat.includes(ruleCat) || catFull.includes(ruleCat) || ruleCat.includes(cat)) {
+              try {
+                const audio = getCategoryAudio(rule.index);
+                audio.currentTime = 0;
+                const playPromise = audio.play();
+                if (playPromise !== undefined) {
+                  playPromise.catch(err => {
+                    console.warn("Falha ao reproduzir áudio da categoria " + rule.category + ", usando fallback:", err);
+                    playFallbackSound(isCritical);
+                  });
+                }
+                return;
+              } catch (err) {
+                console.warn("Erro ao iniciar áudio da categoria:", err);
+              }
+            }
+          }
+        }
+      }
+
+      playFallbackSound(isCritical);
+    }
+
+    function playFallbackSound(isCritical) {
       if (isCritical) {
         // Tenta tocar MP3 crítico se configurado
         if (hasCriticalSoundConfigured) {
@@ -581,7 +628,7 @@
       if (soundEnabled) {
         btn.classList.add('active-sound');
         btn.innerText = 'Som Ativo';
-        playNotificationSound(false, true);
+        playNotificationSound(null, false, true);
       } else {
         btn.classList.remove('active-sound');
         btn.innerText = 'Som Mudo';
@@ -720,7 +767,7 @@
           if (newlyArrived.length > 0) {
             // Verifica se algum dos novos chamados tem prioridade alta para cima (>= 4)
             const hasCritical = newlyArrived.some(t => t.priority_id >= 4);
-            playNotificationSound(hasCritical, false);
+            playNotificationSound(newlyArrived, hasCritical, false);
 
             // Armazena os novos IDs que dispararam o som: ficam em destaque ate a proxima atualizacao que trouxer novos chamados com som
             recentNewTicketIDs = new Set(newlyArrived.map(t => t.id));
@@ -747,6 +794,11 @@
           if (hasCriticalSoundConfigured) {
             getCriticalAudio();
           }
+        }
+
+        if (Array.isArray(res.category_sounds)) {
+          categoryRules = res.category_sounds;
+          categoryRules.forEach(r => getCategoryAudio(r.index));
         }
 
         updateMetrics(ticketsData);
