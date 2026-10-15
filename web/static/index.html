@@ -173,19 +173,26 @@
       background-color: var(--table-hover);
     }
 
-    /* Efeito de destaque piscando na linha do novo chamado até a próxima atualização */
+    /* Efeito de destaque na linha do novo chamado ate a proxima atualizacao */
     tr.highlight-new {
-      animation: flashRow 1.4s ease-in-out infinite alternate;
+      background-color: #162a45 !important;
+      outline: 2px solid #58a6ff;
+      animation: flashRow 1.2s ease-in-out infinite alternate;
+    }
+
+    tr.highlight-new td {
+      color: #ffffff !important;
+      font-weight: 700 !important;
     }
 
     @keyframes flashRow {
       from {
-        background-color: rgba(31, 111, 235, 0.40) !important;
-        border-left: 6px solid #58a6ff;
+        background-color: #1f4273 !important;
+        outline-color: #79c0ff;
       }
       to {
-        background-color: rgba(31, 111, 235, 0.12) !important;
-        border-left: 6px solid #1f6feb;
+        background-color: #0d1e36 !important;
+        outline-color: #1f6feb;
       }
     }
 
@@ -420,8 +427,8 @@
         if (t.priority_id >= 4) prioClass = 'prio-alta';
         else if (t.priority_id === 3) prioClass = 'prio-media';
 
-        // Efeito piscando na linha caso o chamado seja novo deste ciclo recente
-        const isHighlight = recentNewTicketIDs.has(t.id) ? 'highlight-new' : '';
+        // Destaca se chegou no ciclo recente OU se o status for Novo (1)
+        const isHighlight = (recentNewTicketIDs.has(t.id) || t.status_id === 1) ? 'highlight-new' : '';
 
         return `
           <tr class="${isHighlight}">
