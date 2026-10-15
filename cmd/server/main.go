@@ -15,6 +15,7 @@ import (
 	"glpi-painel/internal/glpi"
 	"glpi-painel/internal/handler"
 	"glpi-painel/internal/logger"
+	"glpi-painel/internal/sound"
 	"glpi-painel/web"
 )
 
@@ -83,6 +84,9 @@ func main() {
 	logger.Init(cfg)
 	slog.Info("Configurações carregadas", "glpi_url", cfg.GlpiURL, "tech_group", cfg.TechnicalGroup)
 
+	// Inicializa e baixa som customizado se configurado
+	sound.Init(cfg.NotificationSoundURL)
+
 	glpiClient := glpi.NewClient(cfg)
 
 	apiHandler := &handler.APIHandler{
@@ -94,6 +98,7 @@ func main() {
 
 	// Endpoints da API
 	mux.HandleFunc("/api/tickets", apiHandler.HandleTickets)
+	mux.HandleFunc("/api/sound/notification.mp3", sound.Handler)
 	mux.HandleFunc("/health", apiHandler.HandleHealth)
 
 	// Servir frontend estático embutido

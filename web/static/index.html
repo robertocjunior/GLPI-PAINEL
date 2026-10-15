@@ -334,9 +334,46 @@
       return audioCtx;
     }
 
-    // Sinal sonoro de chamada de aeroporto estilo chime clássico de 4 notas harmônicas
+    let customAudioElement = null;
+    let hasCustomSoundConfigured = false;
+
+    // Inicializa ou retorna o elemento de áudio para o som customizado
+    function getCustomAudio() {
+      if (!customAudioElement) {
+        customAudioElement = new Audio('/api/sound/notification.mp3');
+        customAudioElement.preload = 'auto';
+      }
+      return customAudioElement;
+    }
+
+    // Sinal sonoro de notificação: toca o MP3 customizado se disponível, senão o chime sintetizado
     function playAirportChime(force) {
       if (!soundEnabled && !force) return;
+
+      // Se há som customizado (.mp3 baixado pelo backend), tenta tocar
+      if (hasCustomSoundConfigured) {
+        try {
+          const audio = getCustomAudio();
+          audio.currentTime = 0;
+          const playPromise = audio.play();
+          if (playPromise !== undefined) {
+            playPromise.catch(err => {
+              console.warn("Falha ao reproduzir MP3 customizado, usando sintetizador fallback:", err);
+              playSynthesizedChime();
+            });
+          }
+          return;
+        } catch (err) {
+          console.warn("Erro ao iniciar áudio MP3, usando fallback:", err);
+        }
+      }
+
+      // Fallback padrão: sintetizador de 4 notas harmônicas
+      playSynthesizedChime();
+    }
+
+    // Sinal sonoro de chamada de aeroporto estilo chime clássico de 4 notas harmônicas
+    function playSynthesizedChime() {
       try {
         const ctx = getAudioContext();
         if (!ctx) return;
@@ -385,6 +422,9 @@
 
     function toggleSound() {
       getAudioContext();
+      if (hasCustomSoundConfigured) {
+        getCustomAudio();
+      }
       soundEnabled = !soundEnabled;
       const btn = document.getElementById('soundToggle');
       if (soundEnabled) {
@@ -500,6 +540,13 @@
 
         if (res.refresh_interval && res.refresh_interval > 0) {
           refreshIntervalSec = res.refresh_interval;
+        }
+
+        if (res.has_custom_sound !== undefined) {
+          hasCustomSoundConfigured = !!res.has_custom_sound;
+          if (hasCustomSoundConfigured) {
+            getCustomAudio();
+          }
         }
 
         updateMetrics(ticketsData);

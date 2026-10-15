@@ -16,6 +16,7 @@ type Config struct {
 	GlpiUserToken string
 	TechnicalGroup string // ID ou nome do grupo técnico (padrão "1" para Sistemas)
 	RefreshIntervalSec int // Intervalo de polling no frontend
+	NotificationSoundURL string // URL opcional de arquivo de som .mp3 para novos chamados
 
 	// Logs
 	LogMaxSize int
@@ -53,15 +54,18 @@ func Load() (*Config, error) {
 	logSize, _ := strconv.Atoi(os.Getenv("LOG_MAX_SIZE_MB"))
 	logAge, _ := strconv.Atoi(os.Getenv("LOG_MAX_AGE_DAYS"))
 
+	soundURL := strings.TrimSpace(os.Getenv("NOTIFICATION_SOUND_URL"))
+
 	cfg := &Config{
-		Port:               port,
-		GlpiURL:            glpiURL,
-		GlpiAppToken:       appToken,
-		GlpiUserToken:      userToken,
-		TechnicalGroup:     group,
-		RefreshIntervalSec: refreshSec,
-		LogMaxSize:         logSize,
-		LogMaxAge:          logAge,
+		Port:                 port,
+		GlpiURL:              glpiURL,
+		GlpiAppToken:         appToken,
+		GlpiUserToken:        userToken,
+		TechnicalGroup:       group,
+		RefreshIntervalSec:   refreshSec,
+		NotificationSoundURL: soundURL,
+		LogMaxSize:           logSize,
+		LogMaxAge:            logAge,
 	}
 
 	if cfg.GlpiAppToken == "" || cfg.GlpiUserToken == "" {

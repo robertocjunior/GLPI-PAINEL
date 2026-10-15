@@ -52,6 +52,7 @@ func (h *APIHandler) HandleTickets(w http.ResponseWriter, r *http.Request) {
 		"count":            len(tickets),
 		"time":             time.Now().Format("15:04:05"),
 		"refresh_interval": h.Config.RefreshIntervalSec,
+		"has_custom_sound": h.Config.NotificationSoundURL != "",
 		"data":             tickets,
 	})
 }
