@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"html"
 	"io"
 	"log/slog"
 	"net/http"
@@ -295,12 +296,26 @@ func parseString(val interface{}) string {
 	}
 	switch v := val.(type) {
 	case string:
-		return v
+		return decodeHTMLEntities(v)
 	case float64:
 		return strconv.Itoa(int(v))
 	default:
-		return fmt.Sprintf("%v", v)
+		return decodeHTMLEntities(fmt.Sprintf("%v", v))
 	}
+}
+
+// decodeHTMLEntities converte entidades HTML retornadas pelo GLPI (ex: "&#38;" -> "&",
+// "&#62;" -> ">") em texto legível. Repete o processo algumas vezes para tratar
+// valores duplamente codificados (ex: "&amp;#62;"). O frontend já faz escape na renderização.
+func decodeHTMLEntities(s string) string {
+	for i := 0; i < 3 && strings.Contains(s, "&"); i++ {
+		decoded := html.UnescapeString(s)
+		if decoded == s {
+			break
+		}
+		s = decoded
+	}
+	return s
 }
 
 func formatDateBR(dateStr string) string {
