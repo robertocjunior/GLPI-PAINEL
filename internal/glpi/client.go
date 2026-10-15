@@ -40,6 +40,7 @@ type Ticket struct {
 	Title          string `json:"title"`
 	StatusID       int    `json:"status_id"`
 	Status         string `json:"status"`
+	AssignedUser   string `json:"assigned_user"`
 	PriorityID     int    `json:"priority_id"`
 	Priority       string `json:"priority"`
 	UrgencyID      int    `json:"urgency_id"`
@@ -58,6 +59,7 @@ type Client struct {
 	cfg        *config.Config
 	httpClient *http.Client
 	mu         sync.Mutex
+	userCache  map[string]string
 }
 
 func NewClient(cfg *config.Config) *Client {
@@ -69,6 +71,16 @@ func NewClient(cfg *config.Config) *Client {
 		httpClient: &http.Client{
 			Transport: tr,
 			Timeout:   20 * time.Second,
+		},
+		userCache: map[string]string{
+			"20":  "Roberto Casali",
+			"11":  "Delcio Matos",
+			"18":  "Delcio Matos",
+			"10":  "Wesley Benedito",
+			"19":  "Augusto Correia",
+			"16":  "Victor Menez",
+			"166": "Arthur Salles",
+			"9":   "Luan Costa",
 		},
 	}
 }
@@ -133,8 +145,8 @@ func (c *Client) FetchTickets(ctx context.Context, limit int) ([]Ticket, error) 
 	}
 	q.Set("range", fmt.Sprintf("0-%d", limit))
 
-	// forcedisplay
-	forcedFields := []string{"1", "2", "3", "4", "7", "8", "10", "12", "15", "19", "22", "71"}
+	// forcedisplay (adicionado field 5: Técnico atribuído)
+	forcedFields := []string{"1", "2", "3", "4", "5", "7", "8", "10", "12", "15", "19", "22", "71"}
 	for i, f := range forcedFields {
 		q.Set(fmt.Sprintf("forcedisplay[%d]", i), f)
 	}
@@ -168,6 +180,17 @@ func (c *Client) FetchTickets(ctx context.Context, limit int) ([]Ticket, error) 
 		return nil, fmt.Errorf("erro decodificando resposta da busca de chamados: %w", err)
 	}
 
+	// 1. Popula cache dinâmico de IDs de usuários a partir dos autores e emails retornados
+	for _, item := range rawResult.Data {
+		uID := parseString(item["4"])
+		uMail := parseString(item["22"])
+		if uID != "" && uMail != "" {
+			if _, exists := c.userCache[uID]; !exists {
+				c.userCache[uID] = formatDisplayName(uMail)
+			}
+		}
+	}
+
 	tickets := make([]Ticket, 0, len(rawResult.Data))
 	for _, item := range rawResult.Data {
 		idVal := parseNumber(item["2"])
@@ -189,6 +212,17 @@ func (c *Client) FetchTickets(ctx context.Context, limit int) ([]Ticket, error) 
 		}
 		reqUserDisplayName := formatDisplayName(reqUser)
 
+		// Extrai o primeiro usuário atribuído (field 5), ignorando grupos
+		firstTechID := parseFirstTechID(item["5"])
+		assignedUserName := "-"
+		if firstTechID != "" {
+			if name, ok := c.userCache[firstTechID]; ok && name != "" {
+				assignedUserName = name
+			} else {
+				assignedUserName = formatDisplayName(firstTechID)
+			}
+		}
+
 		ticketURL := fmt.Sprintf("%s/front/ticket.form.php?id=%d", c.cfg.GlpiURL, idVal)
 
 		tickets = append(tickets, Ticket{
@@ -196,6 +230,7 @@ func (c *Client) FetchTickets(ctx context.Context, limit int) ([]Ticket, error) 
 			Title:          parseString(item["1"]),
 			StatusID:       statusVal,
 			Status:         mapStatus(statusVal),
+			AssignedUser:   assignedUserName,
 			PriorityID:     priorityVal,
 			Priority:       mapPriority(priorityVal),
 			UrgencyID:      urgencyVal,
@@ -306,4 +341,23 @@ func formatDisplayName(raw string) string {
 		}
 	}
 	return strings.Join(parts, " ")
+}
+
+func parseFirstTechID(val interface{}) string {
+	if val == nil {
+		return ""
+	}
+	switch v := val.(type) {
+	case string:
+		return strings.TrimSpace(v)
+	case float64:
+		return strconv.Itoa(int(v))
+	case int:
+		return strconv.Itoa(v)
+	case []interface{}:
+		if len(v) > 0 {
+			return parseString(v[0])
+		}
+	}
+	return ""
 }

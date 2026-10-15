@@ -294,17 +294,18 @@
         <thead>
           <tr>
             <th style="width: 80px;">ID</th>
-            <th>Título do Chamado</th>
-            <th style="width: 200px;">Categoria</th>
-            <th style="width: 130px;">Status</th>
+            <th style="max-width: 380px;">Título do Chamado</th>
+            <th style="width: 190px;">Categoria</th>
+            <th style="width: 120px;">Status</th>
+            <th style="width: 180px;">Atribuído a</th>
             <th style="width: 100px;">Prioridade</th>
-            <th style="width: 240px;">Usuário Requerente</th>
-            <th style="width: 150px;">Data de Abertura</th>
+            <th style="width: 220px;">Usuário Requerente</th>
+            <th style="width: 140px;">Data de Abertura</th>
           </tr>
         </thead>
         <tbody id="ticketsBody">
           <tr>
-            <td colspan="7" class="empty-state">Carregando chamados do GLPI...</td>
+            <td colspan="8" class="empty-state">Carregando chamados do GLPI...</td>
           </tr>
         </tbody>
       </table>
@@ -440,13 +441,14 @@
         return `
           <tr class="${isHighlight}">
             <td class="ticket-id">#${t.id}</td>
-            <td>
+            <td style="max-width: 380px; word-break: break-word;">
               <a href="${t.url}" target="_blank" class="ticket-link">
                 ${escapeHtml(t.title)}
               </a>
             </td>
             <td>${escapeHtml(t.category || '-')}</td>
             <td><span class="badge ${statusBadgeClass}">${escapeHtml(t.status)}</span></td>
+            <td style="font-weight: 600;">${escapeHtml(t.assigned_user || '-')}</td>
             <td><span class="${prioClass}">${escapeHtml(t.priority)}</span></td>
             <td>${escapeHtml(t.requester_user || t.requester_group || '-')}</td>
             <td>${escapeHtml(t.date_created_br || t.date_created)}</td>
