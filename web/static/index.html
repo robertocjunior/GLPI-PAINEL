@@ -167,6 +167,10 @@
       font-weight: 500;
     }
 
+    .text-center {
+      text-align: center !important;
+    }
+
     tr:nth-child(even) {
       background-color: var(--table-stripe);
     }
@@ -296,11 +300,11 @@
             <th style="width: 80px;">ID</th>
             <th style="max-width: 380px;">Título do Chamado</th>
             <th style="width: 190px;">Categoria</th>
-            <th style="width: 120px;">Status</th>
-            <th style="width: 180px;">Atribuído a</th>
+            <th style="width: 120px;" class="text-center">Status</th>
+            <th style="width: 180px;" class="text-center">Atribuído a</th>
             <th style="width: 100px;">Prioridade</th>
-            <th style="width: 220px;">Usuário Requerente</th>
-            <th style="width: 140px;">Data de Abertura</th>
+            <th style="width: 220px;" class="text-center">Usuário Requerente</th>
+            <th style="width: 140px;" class="text-center">Data de Abertura</th>
           </tr>
         </thead>
         <tbody id="ticketsBody">
@@ -487,11 +491,11 @@
               </a>
             </td>
             <td>${escapeHtml(t.category || '-')}</td>
-            <td><span class="badge ${statusBadgeClass}">${escapeHtml(t.status)}</span></td>
-            <td style="font-weight: 600;">${escapeHtml(t.assigned_user || '-')}</td>
+            <td class="text-center"><span class="badge ${statusBadgeClass}">${escapeHtml(t.status)}</span></td>
+            <td class="text-center" style="font-weight: 600;">${escapeHtml(t.assigned_user || '-')}</td>
             <td><span class="${prioClass}">${escapeHtml(t.priority)}</span></td>
-            <td>${escapeHtml(t.requester_user || t.requester_group || '-')}</td>
-            <td>${escapeHtml(t.date_created_br || t.date_created)}</td>
+            <td class="text-center">${escapeHtml(t.requester_user || t.requester_group || '-')}</td>
+            <td class="text-center">${escapeHtml(t.date_created_br || t.date_created)}</td>
           </tr>
         `;
       }).join('');
