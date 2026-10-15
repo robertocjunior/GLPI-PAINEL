@@ -1,8 +1,6 @@
 services:
   glpi-painel:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: ghcr.io/robertocjunior/glpi-painel:latest
     container_name: glpi-painel
     restart: unless-stopped
     ports:
