@@ -252,6 +252,9 @@
       <div id="liveDot" class="status-dot"></div>
       <h1>Painel de Chamados</h1>
       <span class="tag">Fila Sistemas</span>
+      <span id="nextSyncTimer" style="background-color: #161f2c; border: 1px solid #303e54; color: #58a6ff; font-weight: 700; font-size: 13px; padding: 3px 8px; margin-left: 6px; font-variant-numeric: tabular-nums;">
+        ⏳ Próximo: 30s
+      </span>
       <span id="lastSync" style="color: var(--text-muted); font-size: 12px; margin-left: 10px;">Atualizando...</span>
     </div>
 
@@ -525,6 +528,11 @@
         knownTicketIDs = new Set(incomingTickets.map(t => t.id));
         isInitialLoad = false;
 
+        // Se a API retornar o intervalo configurado no .env, atualiza
+        if (res.refresh_interval && res.refresh_interval > 0) {
+          refreshIntervalSec = res.refresh_interval;
+        }
+
         updateMetrics(ticketsData);
         renderTable();
 
@@ -535,6 +543,19 @@
         document.getElementById('lastSync').innerText = 'Erro na sincronização';
       } finally {
         dot.classList.remove('syncing');
+        // Reinicia a contagem regressiva para a próxima atualização
+        countdownSec = refreshIntervalSec;
+        updateTimerDisplay();
+      }
+    }
+
+    let refreshIntervalSec = 30; // Padrão 30s ou recebido do .env via API
+    let countdownSec = 30;
+
+    function updateTimerDisplay() {
+      const timerEl = document.getElementById('nextSyncTimer');
+      if (timerEl) {
+        timerEl.innerText = `⏳ Próximo: ${countdownSec}s`;
       }
     }
 
@@ -543,9 +564,18 @@
         getAudioContext();
       }, { once: true });
 
+      // Carga inicial imediata
       loadTickets();
-      // Polling a cada 15 segundos para TV
-      setInterval(loadTickets, 15000);
+
+      // Tick de 1 segundo para contagem regressiva suave na TV
+      setInterval(() => {
+        countdownSec--;
+        if (countdownSec <= 0) {
+          loadTickets();
+        } else {
+          updateTimerDisplay();
+        }
+      }, 1000);
     });
   </script>
 </body>

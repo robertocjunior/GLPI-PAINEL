@@ -47,7 +47,7 @@ func Load() (*Config, error) {
 
 	refreshSec, _ := strconv.Atoi(os.Getenv("REFRESH_INTERVAL_SEC"))
 	if refreshSec <= 0 {
-		refreshSec = 15
+		refreshSec = 30
 	}
 
 	logSize, _ := strconv.Atoi(os.Getenv("LOG_MAX_SIZE_MB"))
