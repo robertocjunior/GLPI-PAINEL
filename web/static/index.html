@@ -173,11 +173,10 @@
       background-color: var(--table-hover);
     }
 
-    /* Efeito de destaque na linha do novo chamado ate a proxima atualizacao */
+    /* Efeito de destaque na linha do chamado que disparou o som: apenas fundo azul sem bordas */
     tr.highlight-new {
-      background-color: #162a45 !important;
-      outline: 2px solid #58a6ff;
-      animation: flashRow 1.2s ease-in-out infinite alternate;
+      background-color: #1a4273 !important;
+      animation: pulseBlueBg 1.5s ease-in-out infinite alternate;
     }
 
     tr.highlight-new td {
@@ -185,14 +184,12 @@
       font-weight: 700 !important;
     }
 
-    @keyframes flashRow {
+    @keyframes pulseBlueBg {
       from {
-        background-color: #1f4273 !important;
-        outline-color: #79c0ff;
+        background-color: #14355c !important;
       }
       to {
-        background-color: #0d1e36 !important;
-        outline-color: #1f6feb;
+        background-color: #215494 !important;
       }
     }
 
@@ -427,8 +424,8 @@
         if (t.priority_id >= 4) prioClass = 'prio-alta';
         else if (t.priority_id === 3) prioClass = 'prio-media';
 
-        // Destaca se chegou no ciclo recente OU se o status for Novo (1)
-        const isHighlight = (recentNewTicketIDs.has(t.id) || t.status_id === 1) ? 'highlight-new' : '';
+        // Destaca apenas os chamados que dispararam o som (mantidos ate a proxima atualizacao que trouxer novos chamados)
+        const isHighlight = recentNewTicketIDs.has(t.id) ? 'highlight-new' : '';
 
         return `
           <tr class="${isHighlight}">
@@ -480,11 +477,8 @@
 
           if (newlyArrived.length > 0) {
             playAirportChime(false);
-            // Armazena os novos IDs para ficarem piscando na tabela durante este ciclo
+            // Armazena os novos IDs que dispararam o som: ficam em destaque ate a proxima atualizacao que trouxer novos chamados com som
             recentNewTicketIDs = new Set(newlyArrived.map(t => t.id));
-          } else {
-            // Se não houve novos chamados neste ciclo, reseta o destaque das linhas
-            recentNewTicketIDs.clear();
           }
         }
 
