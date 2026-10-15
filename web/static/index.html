@@ -210,6 +210,7 @@
 
     .badge-novo { background-color: #1f6feb; color: #ffffff; }
     .badge-atribuido { background-color: #9e6a03; color: #ffffff; }
+    .badge-planejado { background-color: #1b7c83; color: #ffffff; }
     .badge-pendente { background-color: #6e40c9; color: #ffffff; }
     .badge-solucionado { background-color: #238636; color: #ffffff; }
     .badge-outro { background-color: #262c36; color: var(--text-muted); }
@@ -454,7 +455,8 @@
       tbody.innerHTML = ticketsData.map(t => {
         let statusBadgeClass = 'badge-outro';
         if (t.status_id === 1) statusBadgeClass = 'badge-novo';
-        else if (t.status_id === 2 || t.status_id === 3) statusBadgeClass = 'badge-atribuido';
+        else if (t.status_id === 2) statusBadgeClass = 'badge-atribuido';
+        else if (t.status_id === 3) statusBadgeClass = 'badge-planejado';
         else if (t.status_id === 4) statusBadgeClass = 'badge-pendente';
         else if (t.status_id === 5) statusBadgeClass = 'badge-solucionado';
 
