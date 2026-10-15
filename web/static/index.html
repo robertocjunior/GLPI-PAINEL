@@ -580,7 +580,7 @@
       }
     }
 
-    // Alerta sintetizado de emergência para chamados críticos (pulsos de alta frequência)
+    // Alerta sintetizado padrão para chamados críticos: Chime de Alerta de Cockpit / Atenção Imediata (Double Chime grave com ressonância)
     function playSynthesizedCriticalAlert() {
       try {
         const ctx = getAudioContext();
@@ -588,27 +588,34 @@
 
         const now = ctx.currentTime;
 
-        function playBip(freq, startTime, duration) {
-          const osc = ctx.createOscillator();
-          const gain = ctx.createGain();
-          osc.type = 'sawtooth';
-          osc.frequency.setValueAtTime(freq, startTime);
+        function playChimeBell(freq1, freq2, startTime, duration, volume) {
+          const osc1 = ctx.createOscillator();
+          const osc2 = ctx.createOscillator();
+          const gainNode = ctx.createGain();
 
-          gain.gain.setValueAtTime(0.001, startTime);
-          gain.gain.linearRampToValueAtTime(0.35, startTime + 0.02);
-          gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+          osc1.type = 'sine';
+          osc1.frequency.setValueAtTime(freq1, startTime);
 
-          osc.connect(gain);
-          gain.connect(ctx.destination);
+          osc2.type = 'triangle';
+          osc2.frequency.setValueAtTime(freq2, startTime);
 
-          osc.start(startTime);
-          osc.stop(startTime + duration);
+          gainNode.gain.setValueAtTime(0.0001, startTime);
+          gainNode.gain.linearRampToValueAtTime(volume, startTime + 0.03);
+          gainNode.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
+
+          osc1.connect(gainNode);
+          osc2.connect(gainNode);
+          gainNode.connect(ctx.destination);
+
+          osc1.start(startTime);
+          osc1.stop(startTime + duration);
+          osc2.start(startTime);
+          osc2.stop(startTime + duration);
         }
 
-        // Três bips rápidos e agudos estilo alarme de emergência
-        playBip(880, now, 0.22);
-        playBip(880, now + 0.28, 0.22);
-        playBip(1174.66, now + 0.56, 0.40);
+        // Duplo acorde de alerta de cabine/atenção urgente (A4 -> D4) com corpo harmônico
+        playChimeBell(880.00, 1760.00, now, 0.8, 0.45);
+        playChimeBell(587.33, 1174.66, now + 0.35, 1.5, 0.50);
 
       } catch (err) {
         console.error("Erro ao reproduzir alerta crítico:", err);
