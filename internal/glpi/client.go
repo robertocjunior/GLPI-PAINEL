@@ -203,6 +203,7 @@ func (c *Client) FetchTickets(ctx context.Context, limit int) ([]Ticket, error) 
 		if reqUser == "" {
 			reqUser = parseString(item["4"])
 		}
+		reqUserDisplayName := formatDisplayName(reqUser)
 
 		ticketURL := fmt.Sprintf("%s/front/ticket.form.php?id=%d", c.cfg.GlpiURL, idVal)
 
@@ -217,7 +218,7 @@ func (c *Client) FetchTickets(ctx context.Context, limit int) ([]Ticket, error) 
 			Category:       catClean,
 			TechnicalGroup: parseString(item["8"]),
 			RequesterID:    parseString(item["4"]),
-			RequesterUser:  reqUser,
+			RequesterUser:  reqUserDisplayName,
 			RequesterGroup: reqGrpClean,
 			DateCreated:    rawDateCreated,
 			DateCreatedBR:  dateCreatedBR,
@@ -292,4 +293,33 @@ func formatDateBR(dateStr string) string {
 		return fmt.Sprintf("%s/%s/%s", parts[2], parts[1], parts[0])
 	}
 	return dateStr
+}
+
+func formatDisplayName(raw string) string {
+	if raw == "" {
+		return "-"
+	}
+	val := strings.TrimSpace(raw)
+	// Remove sufixo de email caso presente (@lipetral.com.br, etc)
+	if atIdx := strings.Index(val, "@"); atIdx != -1 {
+		val = val[:atIdx]
+	}
+	// Normaliza separadores comuns (ponto, sublinhado, hífen)
+	val = strings.ReplaceAll(val, ".", " ")
+	val = strings.ReplaceAll(val, "_", " ")
+	val = strings.ReplaceAll(val, "-", " ")
+
+	parts := strings.Fields(val)
+	if len(parts) == 0 {
+		return raw
+	}
+
+	for i, p := range parts {
+		r := []rune(strings.ToLower(p))
+		if len(r) > 0 {
+			r[0] = []rune(strings.ToUpper(string(r[0])))[0]
+			parts[i] = string(r)
+		}
+	}
+	return strings.Join(parts, " ")
 }

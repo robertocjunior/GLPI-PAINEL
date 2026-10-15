@@ -434,8 +434,8 @@
             <td>${escapeHtml(t.category || '-')}</td>
             <td><span class="badge ${statusBadgeClass}">${escapeHtml(t.status)}</span></td>
             <td><span class="${prioClass}">${escapeHtml(t.priority)}</span></td>
-            <td style="color: #c9d1d9;">${escapeHtml(t.requester_user || t.requester_group || '-')}</td>
-            <td style="color: var(--text-muted); font-size: 13px;">${escapeHtml(t.date_created_br || t.date_created)}</td>
+            <td>${escapeHtml(t.requester_user || t.requester_group || '-')}</td>
+            <td>${escapeHtml(t.date_created_br || t.date_created)}</td>
           </tr>
         `;
       }).join('');
