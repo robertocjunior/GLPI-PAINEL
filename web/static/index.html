@@ -466,11 +466,14 @@
       const tbody = document.getElementById('ticketsBody');
 
       if (!ticketsData || ticketsData.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" class="empty-state">Nenhum chamado em aberto no momento.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" class="empty-state">Nenhum chamado em aberto no momento.</td></tr>`;
         return;
       }
 
-      tbody.innerHTML = ticketsData.map(t => {
+      // Exibe apenas os 5 chamados mais recentes
+      const displayTickets = ticketsData.slice(0, 5);
+
+      tbody.innerHTML = displayTickets.map(t => {
         let statusBadgeClass = 'badge-outro';
         if (t.status_id === 1) statusBadgeClass = 'badge-novo';
         else if (t.status_id === 2) statusBadgeClass = 'badge-atribuido';
