@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>GLPI - Painel TV</title>
   <style>
-    /* Reset & Variáveis - Otimizado para TV, Cantos Retos (0px), Sem Degrades */
+    /* Reset & Variáveis - Otimizado para TV, Cantos Retos (0px), Sem Degrades, Sem Emojis */
     :root {
       --bg-body: #0a0d12;
       --bg-surface: #12171f;
@@ -100,26 +100,6 @@
       width: 100%;
     }
 
-    /* Banner Gigante de Alerta para TV */
-    #alertBanner {
-      display: none;
-      background-color: #0c2d6b;
-      border: 2px solid #388bfd;
-      color: #ffffff;
-      padding: 14px 20px;
-      margin-bottom: 16px;
-      font-size: 16px;
-      font-weight: 700;
-      align-items: center;
-      justify-content: space-between;
-      animation: alertPulse 1.2s infinite alternate;
-    }
-
-    @keyframes alertPulse {
-      from { background-color: #0c2d6b; border-color: #388bfd; }
-      to { background-color: #1f6feb; border-color: #ffffff; }
-    }
-
     /* Cards de Métricas com números grandes para TV */
     .metrics-bar {
       display: grid;
@@ -193,9 +173,20 @@
       background-color: var(--table-hover);
     }
 
+    /* Efeito de destaque piscando na linha do novo chamado até a próxima atualização */
     tr.highlight-new {
-      background-color: rgba(31, 111, 235, 0.28) !important;
-      border-left: 5px solid #58a6ff;
+      animation: flashRow 1.4s ease-in-out infinite alternate;
+    }
+
+    @keyframes flashRow {
+      from {
+        background-color: rgba(31, 111, 235, 0.40) !important;
+        border-left: 6px solid #58a6ff;
+      }
+      to {
+        background-color: rgba(31, 111, 235, 0.12) !important;
+        border-left: 6px solid #1f6feb;
+      }
     }
 
     /* Badges de Status Limpos */
@@ -252,32 +243,28 @@
       <div id="liveDot" class="status-dot"></div>
       <h1>Painel de Chamados</h1>
       <span class="tag">Fila Sistemas</span>
-      <span id="nextSyncTimer" style="background-color: #161f2c; border: 1px solid #303e54; color: #58a6ff; font-weight: 700; font-size: 13px; padding: 3px 8px; margin-left: 6px; font-variant-numeric: tabular-nums;">
-        ⏳ Próximo: 30s
+      <span id="nextSyncTimer" style="color: var(--text-muted); font-size: 12px; margin-left: 10px; font-variant-numeric: tabular-nums;">
+        proxima atualizacao: 00:30
       </span>
-      <span id="lastSync" style="color: var(--text-muted); font-size: 12px; margin-left: 10px;">Atualizando...</span>
+      <span id="lastSync" style="color: var(--text-muted); font-size: 12px; margin-left: 14px;">
+        Ultima sinc: Atualizando...
+      </span>
     </div>
 
     <div class="header-info">
       <button id="soundToggle" class="active-sound" onclick="toggleSound()">
-        🔊 Som Ativo
+        Som Ativo
       </button>
       <button onclick="playAirportChime(true)">
-        🔔 Testar Som (Aeroporto)
+        Testar Som (Aeroporto)
       </button>
       <button onclick="loadTickets()">
-        🔄 Atualizar
+        Atualizar
       </button>
     </div>
   </header>
 
   <div class="container">
-    
-    <!-- Banner de Alerta para TV -->
-    <div id="alertBanner">
-      <div id="alertMessage">🚨 NOVO CHAMADO RECEBIDO NA FILA!</div>
-      <button onclick="dismissAlert()" style="background: transparent; border: 1px solid #ffffff; color: #ffffff; padding: 4px 10px;">✕</button>
-    </div>
 
     <!-- Métricas TV -->
     <div class="metrics-bar">
@@ -299,7 +286,7 @@
       </div>
     </div>
 
-    <!-- Tabela Direta e Limpa sem filtros manuais -->
+    <!-- Tabela Otimizada -->
     <div class="table-container">
       <table>
         <thead>
@@ -329,6 +316,7 @@
     let isInitialLoad = true;
     let soundEnabled = true;
     let audioCtx = null;
+    let recentNewTicketIDs = new Set(); // Armazena IDs que chegaram no ciclo recente para piscar até o próximo update
 
     function getAudioContext() {
       if (!audioCtx) {
@@ -343,9 +331,7 @@
       return audioCtx;
     }
 
-    // Sinal sonoro de chamada de aeroporto estilo chime clássico de 4 notas longas e ressonantes
-    // Sequência aeroporto internacional: C5 (523Hz) -> G4 (392Hz) -> F4 (349Hz) -> C4 (261Hz)
-    // Prolongado e marcante com harmônicos tubulares para ambiente de TV
+    // Sinal sonoro de chamada de aeroporto estilo chime clássico de 4 notas harmônicas
     function playAirportChime(force) {
       if (!soundEnabled && !force) return;
       try {
@@ -355,19 +341,16 @@
         const now = ctx.currentTime;
 
         function playHarmonicTone(freq, startTime, duration, volume) {
-          // Fundamental
           const osc1 = ctx.createOscillator();
           const gain1 = ctx.createGain();
           osc1.type = 'sine';
           osc1.frequency.setValueAtTime(freq, startTime);
 
-          // Segundo harmônico sutil (típico de carrilhão/chime de aeroporto)
           const osc2 = ctx.createOscillator();
           const gain2 = ctx.createGain();
           osc2.type = 'sine';
           osc2.frequency.setValueAtTime(freq * 2, startTime);
 
-          // Envelope suave e longo
           gain1.gain.setValueAtTime(0.0001, startTime);
           gain1.gain.linearRampToValueAtTime(volume, startTime + 0.05);
           gain1.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
@@ -387,17 +370,9 @@
           osc2.stop(startTime + duration);
         }
 
-        // Chime de Aeroporto Completo e Longo:
-        // Nota 1: G4 (392.00 Hz) - 1.2s de duração
         playHarmonicTone(392.00, now, 1.2, 0.40);
-
-        // Nota 2: E4 (329.63 Hz) - toca aos 0.40s
         playHarmonicTone(329.63, now + 0.40, 1.3, 0.40);
-
-        // Nota 3: C4 (261.63 Hz) - toca aos 0.85s
         playHarmonicTone(261.63, now + 0.85, 1.4, 0.42);
-
-        // Nota 4: G3 (196.00 Hz) - resolução longa e marcante com 2.2s de cauda ressonante
         playHarmonicTone(196.00, now + 1.30, 2.2, 0.45);
 
       } catch (err) {
@@ -411,22 +386,12 @@
       const btn = document.getElementById('soundToggle');
       if (soundEnabled) {
         btn.classList.add('active-sound');
-        btn.innerText = '🔊 Som Ativo';
+        btn.innerText = 'Som Ativo';
         playAirportChime(true);
       } else {
         btn.classList.remove('active-sound');
-        btn.innerText = '🔇 Som Mudo';
+        btn.innerText = 'Som Mudo';
       }
-    }
-
-    function showAlert(msg) {
-      const banner = document.getElementById('alertBanner');
-      document.getElementById('alertMessage').innerText = msg;
-      banner.style.display = 'flex';
-    }
-
-    function dismissAlert() {
-      document.getElementById('alertBanner').style.display = 'none';
     }
 
     function updateMetrics(tickets) {
@@ -467,10 +432,11 @@
         if (t.priority_id >= 4) prioClass = 'prio-alta';
         else if (t.priority_id === 3) prioClass = 'prio-media';
 
-        const isNewHighlight = t.status_id === 1 ? 'highlight-new' : '';
+        // Efeito piscando na linha caso o chamado seja novo deste ciclo recente
+        const isHighlight = recentNewTicketIDs.has(t.id) ? 'highlight-new' : '';
 
         return `
-          <tr class="${isNewHighlight}">
+          <tr class="${isHighlight}">
             <td style="font-weight: 800; color: #ffffff;">#${t.id}</td>
             <td>
               <a href="${t.url}" target="_blank" class="ticket-link">
@@ -508,7 +474,7 @@
         const res = await resp.json();
         const incomingTickets = res.data || [];
 
-        // Detectar novos chamados
+        // Detectar novos chamados que chegaram agora
         let newlyArrived = [];
         if (!isInitialLoad) {
           incomingTickets.forEach(t => {
@@ -519,8 +485,11 @@
 
           if (newlyArrived.length > 0) {
             playAirportChime(false);
-            const first = newlyArrived[0];
-            showAlert(`🚨 NOVO CHAMADO: #${first.id} - ${first.title}`);
+            // Armazena os novos IDs para ficarem piscando na tabela durante este ciclo
+            recentNewTicketIDs = new Set(newlyArrived.map(t => t.id));
+          } else {
+            // Se não houve novos chamados neste ciclo, reseta o destaque das linhas
+            recentNewTicketIDs.clear();
           }
         }
 
@@ -528,7 +497,6 @@
         knownTicketIDs = new Set(incomingTickets.map(t => t.id));
         isInitialLoad = false;
 
-        // Se a API retornar o intervalo configurado no .env, atualiza
         if (res.refresh_interval && res.refresh_interval > 0) {
           refreshIntervalSec = res.refresh_interval;
         }
@@ -536,26 +504,32 @@
         updateMetrics(ticketsData);
         renderTable();
 
-        document.getElementById('lastSync').innerText = 'Última sinc: ' + (res.time || new Date().toLocaleTimeString());
+        document.getElementById('lastSync').innerText = 'Ultima sinc: ' + (res.time || new Date().toLocaleTimeString());
 
       } catch (err) {
-        console.error('Erro na sincronização:', err);
-        document.getElementById('lastSync').innerText = 'Erro na sincronização';
+        console.error('Erro na sincronizacao:', err);
+        document.getElementById('lastSync').innerText = 'Erro na sincronizacao';
       } finally {
         dot.classList.remove('syncing');
-        // Reinicia a contagem regressiva para a próxima atualização
         countdownSec = refreshIntervalSec;
         updateTimerDisplay();
       }
     }
 
-    let refreshIntervalSec = 30; // Padrão 30s ou recebido do .env via API
+    let refreshIntervalSec = 30;
     let countdownSec = 30;
+
+    function formatTimeMMSS(totalSeconds) {
+      if (totalSeconds < 0) totalSeconds = 0;
+      const m = Math.floor(totalSeconds / 60);
+      const s = totalSeconds % 60;
+      return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+    }
 
     function updateTimerDisplay() {
       const timerEl = document.getElementById('nextSyncTimer');
       if (timerEl) {
-        timerEl.innerText = `⏳ Próximo: ${countdownSec}s`;
+        timerEl.innerText = `proxima atualizacao: ${formatTimeMMSS(countdownSec)}`;
       }
     }
 
@@ -564,10 +538,8 @@
         getAudioContext();
       }, { once: true });
 
-      // Carga inicial imediata
       loadTickets();
 
-      // Tick de 1 segundo para contagem regressiva suave na TV
       setInterval(() => {
         countdownSec--;
         if (countdownSec <= 0) {
