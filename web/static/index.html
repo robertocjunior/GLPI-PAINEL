@@ -375,13 +375,14 @@
           <tr>
             <th style="width: 80px;">ID</th>
             <th>Título do Chamado</th>
-            <th style="width: 260px;" class="text-center">Usuário Requerente</th>
-            <th style="width: 200px;" class="text-center">Atribuído a</th>
+            <th style="width: 140px;" class="text-center">Prioridade</th>
+            <th style="width: 240px;" class="text-center">Usuário Requerente</th>
+            <th style="width: 190px;" class="text-center">Atribuído a</th>
           </tr>
         </thead>
         <tbody id="criticalTicketsBody">
           <tr>
-            <td colspan="4" class="empty-state" style="padding: 20px; font-size: 16px; color: #ff7b72;">
+            <td colspan="5" class="empty-state" style="padding: 20px; font-size: 16px; color: #ff7b72;">
               Nenhum chamado crítico ou muito alto no momento.
             </td>
           </tr>
@@ -613,6 +614,9 @@
         return;
       }
 
+      // Ordena explicitamente por ID decrescente para garantir ordenação estrita
+      ticketsData.sort((a, b) => b.id - a.id);
+
       // Exibe apenas os 5 chamados mais recentes
       const displayTickets = ticketsData.slice(0, 5);
 
@@ -649,12 +653,15 @@
         `;
       }).join('');
 
-      // Renderiza lista inferior de chamados de prioridade alta para cima (priority_id >= 4)
+      // Renderiza lista inferior de chamados de prioridade alta para cima (priority_id >= 4) ordenada por ID DESC
       const criticalTbody = document.getElementById('criticalTicketsBody');
-      const criticalTickets = ticketsData.filter(t => t.priority_id >= 4);
+      const criticalTickets = ticketsData
+        .filter(t => t.priority_id >= 4)
+        .sort((a, b) => b.id - a.id);
 
       if (criticalTickets.length > 0) {
         criticalTbody.innerHTML = criticalTickets.map(t => {
+          let prioClass = 'prio-alta';
           return `
             <tr>
               <td class="ticket-id">#${t.id}</td>
@@ -663,6 +670,7 @@
                   ${escapeHtml(t.title)}
                 </a>
               </td>
+              <td class="text-center"><span class="${prioClass}">${escapeHtml(t.priority)}</span></td>
               <td class="text-center">${escapeHtml(t.requester_user || t.requester_group || '-')}</td>
               <td class="text-center" style="font-weight: 600;">${escapeHtml(t.assigned_user || '-')}</td>
             </tr>
@@ -671,7 +679,7 @@
       } else {
         criticalTbody.innerHTML = `
           <tr>
-            <td colspan="4" class="empty-state" style="padding: 16px; font-size: 15px; color: #ff7b72;">
+            <td colspan="5" class="empty-state" style="padding: 16px; font-size: 15px; color: #ff7b72;">
               Nenhum chamado com prioridade Alta, Muito Alta ou Crítica em aberto no momento.
             </td>
           </tr>

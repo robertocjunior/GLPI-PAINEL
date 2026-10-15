@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -138,7 +139,7 @@ func (c *Client) FetchTickets(ctx context.Context, limit int) ([]Ticket, error) 
 	q.Set("criteria[0][searchtype]", "equals")
 	q.Set("criteria[0][value]", "notold")
 
-	q.Set("sort", "19") // Data de Modificação
+	q.Set("sort", "2") // ID do Chamado
 	q.Set("order", "DESC")
 	if limit <= 0 {
 		limit = 100
@@ -245,6 +246,11 @@ func (c *Client) FetchTickets(ctx context.Context, limit int) ([]Ticket, error) 
 			URL:            ticketURL,
 		})
 	}
+
+	// Ordena única e exclusivamente por ID decrescente
+	sort.SliceStable(tickets, func(i, j int) bool {
+		return tickets[i].ID > tickets[j].ID
+	})
 
 	slog.Debug("Consulta GLPI realizada com sucesso", "tickets_found", len(tickets))
 	return tickets, nil
