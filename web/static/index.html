@@ -216,11 +216,19 @@
     .prio-media { color: #d29922; font-weight: 700; font-size: 17px; }
     .prio-baixa { color: #8b949e; font-size: 17px; }
 
+    td.ticket-id {
+      font-size: 22px !important;
+      font-weight: 800 !important;
+      color: #ffffff !important;
+      letter-spacing: 0.5px;
+    }
+
     a.ticket-link {
       color: #f0f6fc;
       text-decoration: none;
-      font-weight: 600;
-      font-size: 18px;
+      font-weight: 700;
+      font-size: 22px;
+      line-height: 1.3;
     }
 
     .empty-state {
@@ -431,7 +439,7 @@
 
         return `
           <tr class="${isHighlight}">
-            <td style="font-weight: 800; color: #ffffff;">#${t.id}</td>
+            <td class="ticket-id">#${t.id}</td>
             <td>
               <a href="${t.url}" target="_blank" class="ticket-link">
                 ${escapeHtml(t.title)}
