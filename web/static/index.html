@@ -256,6 +256,56 @@
     .status-dot.syncing {
       background-color: var(--atrib-badge);
     }
+
+    /* Tabela de Chamados Críticos (Muito Alta / Crítica) */
+    .critical-table-container {
+      margin-top: 18px;
+      background-color: #261114;
+      border: 1px solid #671f28;
+      width: 100%;
+    }
+
+    .critical-table-container table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+    }
+
+    .critical-table-container th {
+      background-color: #3b1419;
+      color: #ff7b72;
+      font-size: 14px;
+      text-transform: uppercase;
+      font-weight: 800;
+      padding: 12px 16px;
+      border-bottom: 2px solid #671f28;
+      white-space: nowrap;
+      letter-spacing: 0.5px;
+    }
+
+    .critical-table-container td {
+      padding: 12px 16px;
+      border-bottom: 1px solid #481a20;
+      font-size: 18px;
+      font-weight: 500;
+      background-color: #1f0d10;
+    }
+
+    .critical-table-container tr:nth-child(even) td {
+      background-color: #271014;
+    }
+
+    .critical-table-container tr:hover td {
+      background-color: #38151a;
+    }
+
+    .critical-table-container td.ticket-id {
+      color: #ff7b72 !important;
+    }
+
+    .critical-table-container a.ticket-link {
+      color: #ffdcd7;
+    }
   </style>
 </head>
 <body>
@@ -314,6 +364,22 @@
           <tr>
             <td colspan="8" class="empty-state">Carregando chamados do GLPI...</td>
           </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Tabela de Chamados Críticos / Muito Alta (Sem título para otimizar espaço) -->
+    <div id="criticalTableContainer" class="critical-table-container" style="display: none;">
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 80px;">ID</th>
+            <th>Título do Chamado</th>
+            <th style="width: 260px;" class="text-center">Usuário Requerente</th>
+            <th style="width: 200px;" class="text-center">Atribuído a</th>
+          </tr>
+        </thead>
+        <tbody id="criticalTicketsBody">
         </tbody>
       </table>
     </div>
@@ -577,6 +643,32 @@
           </tr>
         `;
       }).join('');
+
+      // Renderiza lista inferior de chamados críticos / muito alta (priority_id >= 5)
+      const criticalContainer = document.getElementById('criticalTableContainer');
+      const criticalTbody = document.getElementById('criticalTicketsBody');
+      const criticalTickets = ticketsData.filter(t => t.priority_id >= 5);
+
+      if (criticalTickets.length > 0) {
+        criticalContainer.style.display = 'block';
+        criticalTbody.innerHTML = criticalTickets.map(t => {
+          return `
+            <tr>
+              <td class="ticket-id">#${t.id}</td>
+              <td style="word-break: break-word;">
+                <a href="${t.url}" target="_blank" class="ticket-link">
+                  ${escapeHtml(t.title)}
+                </a>
+              </td>
+              <td class="text-center">${escapeHtml(t.requester_user || t.requester_group || '-')}</td>
+              <td class="text-center" style="font-weight: 600;">${escapeHtml(t.assigned_user || '-')}</td>
+            </tr>
+          `;
+        }).join('');
+      } else {
+        criticalContainer.style.display = 'none';
+        criticalTbody.innerHTML = '';
+      }
     }
 
     function escapeHtml(text) {
