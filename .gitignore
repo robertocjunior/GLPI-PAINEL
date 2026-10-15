@@ -1,0 +1,5 @@
+.env
+logs/
+bin/
+*.exe
+.DS_Store

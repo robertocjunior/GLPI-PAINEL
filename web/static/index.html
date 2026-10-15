@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GLPI - Painel de Chamados</title>
+  <style>
+    /* Reset & Variáveis - Tema Escuro, Cantos Retos (0px), Sem Degrades */
+    :root {
+      --bg-body: #0d1117;
+      --bg-surface: #161b22;
+      --bg-header: #090d12;
+      --border-color: #30363d;
+      --text-main: #e6edf3;
+      --text-muted: #8b949e;
+      --accent: #238636;
+      --accent-hover: #2ea043;
+      --danger: #da3633;
+      --warning: #d29922;
+      --info: #58a6ff;
+      --purple: #bc8cff;
+      --new-badge: #1f6feb;
+      --table-stripe: #12161c;
+      --table-hover: #1f242c;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      border-radius: 0 !important; /* Sem cantos arredondados, exatamente reto */
+    }
+
+    body {
+      background-color: var(--bg-body);
+      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      font-size: 13px;
+      line-height: 1.4;
+      padding: 0;
+      margin: 0;
+    }
+
+    /* Top Navigation Header */
+    header {
+      background-color: var(--bg-header);
+      border-bottom: 2px solid var(--border-color);
+      padding: 12px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand h1 {
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      color: #ffffff;
+      text-transform: uppercase;
+    }
+
+    .brand span.tag {
+      background-color: #21262d;
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      font-size: 11px;
+      padding: 2px 6px;
+      font-weight: 600;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    /* Botões & Controles */
+    button {
+      background-color: #21262d;
+      color: var(--text-main);
+      border: 1px solid var(--border-color);
+      padding: 6px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: background-color 0.1s ease;
+    }
+
+    button:hover {
+      background-color: #30363d;
+    }
+
+    button.primary {
+      background-color: var(--accent);
+      border-color: #2ea043;
+      color: #ffffff;
+    }
+
+    button.primary:hover {
+      background-color: var(--accent-hover);
+    }
+
+    button.active-sound {
+      background-color: #1f6feb;
+      border-color: #388bfd;
+      color: #ffffff;
+    }
+
+    /* Container Principal */
+    .container {
+      padding: 20px;
+      max-width: 100%;
+    }
+
+    /* Banner de Alerta de Novo Chamado */
+    #alertBanner {
+      display: none;
+      background-color: #1f6feb;
+      border: 1px solid #388bfd;
+      color: #ffffff;
+      padding: 12px 16px;
+      margin-bottom: 16px;
+      font-size: 13px;
+      font-weight: 600;
+      display: none;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    /* Cartões de Status / Métricas Rápidas */
+    .metrics-bar {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .metric-card {
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      padding: 10px 14px;
+    }
+
+    .metric-title {
+      font-size: 11px;
+      text-transform: uppercase;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+
+    .metric-value {
+      font-size: 22px;
+      font-weight: 700;
+      color: #ffffff;
+    }
+
+    .metric-card.novo { border-left: 4px solid var(--new-badge); }
+    .metric-card.atendimento { border-left: 4px solid var(--warning); }
+    .metric-card.pendente { border-left: 4px solid var(--purple); }
+    .metric-card.total { border-left: 4px solid var(--text-muted); }
+
+    /* Barra de Filtros e Busca */
+    .filter-bar {
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      padding: 10px 14px;
+      margin-bottom: 16px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .filter-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    input[type="text"], select {
+      background-color: #0d1117;
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 6px 10px;
+      font-size: 12px;
+      outline: none;
+    }
+
+    input[type="text"]:focus, select:focus {
+      border-color: #58a6ff;
+    }
+
+    /* Tabela de Chamados */
+    .table-container {
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+    }
+
+    th {
+      background-color: var(--bg-header);
+      color: var(--text-muted);
+      font-size: 11px;
+      text-transform: uppercase;
+      font-weight: 700;
+      padding: 10px 12px;
+      border-bottom: 2px solid var(--border-color);
+      white-space: nowrap;
+    }
+
+    td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border-color);
+      font-size: 13px;
+    }
+
+    tr:nth-child(even) {
+      background-color: var(--table-stripe);
+    }
+
+    tr:hover {
+      background-color: var(--table-hover);
+    }
+
+    tr.highlight-new {
+      background-color: rgba(31, 111, 235, 0.22) !important;
+      animation: flashBorder 1.5s ease-in-out infinite alternate;
+    }
+
+    @keyframes flashBorder {
+      from { border-left: 4px solid #58a6ff; }
+      to { border-left: 4px solid #ffffff; }
+    }
+
+    /* Badges de Status e Prioridade */
+    .badge {
+      display: inline-block;
+      padding: 3px 8px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .badge-novo { background-color: #1f6feb; color: #ffffff; }
+    .badge-atendimento { background-color: #9e6a03; color: #ffffff; }
+    .badge-pendente { background-color: #6e40c9; color: #ffffff; }
+    .badge-solucionado { background-color: #238636; color: #ffffff; }
+    .badge-outro { background-color: #30363d; color: var(--text-muted); }
+
+    .badge-prio-alta { color: #f85149; font-weight: 700; }
+    .badge-prio-media { color: #d29922; font-weight: 600; }
+    .badge-prio-baixa { color: #8b949e; }
+
+    /* Links de Abertura do Chamado */
+    a.ticket-link {
+      color: var(--info);
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    a.ticket-link:hover {
+      text-decoration: underline;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--text-muted);
+    }
+
+    .status-indicator {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      background-color: var(--accent);
+      margin-right: 6px;
+    }
+
+    .status-indicator.syncing {
+      background-color: var(--warning);
+      animation: pulse 1s infinite alternate;
+    }
+
+    @keyframes pulse {
+      from { opacity: 0.3; }
+      to { opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <div id="liveIndicator" class="status-indicator"></div>
+      <h1>Painel GLPI</h1>
+      <span class="tag">Fila Sistemas</span>
+      <span id="lastSync" style="color: var(--text-muted); font-size: 11px; margin-left: 8px;">Atualizando...</span>
+    </div>
+
+    <div class="header-actions">
+      <button id="soundToggle" class="active-sound" onclick="toggleSound()">
+        🔊 Som: Ativado
+      </button>
+      <button id="testSoundBtn" onclick="playAirportChime(true)">
+        🔔 Testar Som Aeroporto
+      </button>
+      <button class="primary" onclick="loadTickets(true)">
+        🔄 Atualizar Agora
+      </button>
+    </div>
+  </header>
+
+  <div class="container">
+    
+    <!-- Banner emitido quando novo chamado é detectado -->
+    <div id="alertBanner">
+      <div id="alertMessage">🔔 Novo chamado recebido na fila!</div>
+      <button onclick="dismissAlert()" style="background: transparent; border: 1px solid #ffffff; color: #ffffff;">Fechar</button>
+    </div>
+
+    <!-- Métricas do Topo -->
+    <div class="metrics-bar">
+      <div class="metric-card total">
+        <div class="metric-title">Total Abertos</div>
+        <div class="metric-value" id="countTotal">0</div>
+      </div>
+      <div class="metric-card novo">
+        <div class="metric-title">Novos</div>
+        <div class="metric-value" id="countNovo" style="color: #58a6ff;">0</div>
+      </div>
+      <div class="metric-card atendimento">
+        <div class="metric-title">Em Atendimento</div>
+        <div class="metric-value" id="countAtendimento" style="color: #d29922;">0</div>
+      </div>
+      <div class="metric-card pendente">
+        <div class="metric-title">Pendentes</div>
+        <div class="metric-value" id="countPendente" style="color: #bc8cff;">0</div>
+      </div>
+    </div>
+
+    <!-- Filtros de Busca -->
+    <div class="filter-bar">
+      <div class="filter-group">
+        <label for="searchFilter" style="color: var(--text-muted);">Buscar:</label>
+        <input type="text" id="searchFilter" placeholder="Filtrar por título, ID ou departamento..." oninput="renderTable()">
+      </div>
+
+      <div class="filter-group">
+        <label for="statusFilter" style="color: var(--text-muted);">Status:</label>
+        <select id="statusFilter" onchange="renderTable()">
+          <option value="ALL">Todos os status</option>
+          <option value="1">1 - Novo</option>
+          <option value="2">2 - Em atendimento</option>
+          <option value="4">4 - Pendente</option>
+        </select>
+      </div>
+
+      <div style="margin-left: auto; color: var(--text-muted); font-size: 11px;">
+        Auto-refresh: <strong>15s</strong>
+      </div>
+    </div>
+
+    <!-- Tabela -->
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 80px;">ID</th>
+            <th>Título do Chamado</th>
+            <th style="width: 180px;">Categoria</th>
+            <th style="width: 140px;">Status</th>
+            <th style="width: 100px;">Prioridade</th>
+            <th style="width: 220px;">Departamento</th>
+            <th style="width: 150px;">Modificado Em</th>
+          </tr>
+        </thead>
+        <tbody id="ticketsBody">
+          <tr>
+            <td colspan="7" class="empty-state">Carregando chamados do GLPI...</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+
+  <script>
+    let ticketsData = [];
+    let knownTicketIDs = new Set();
+    let isInitialLoad = true;
+    let soundEnabled = true;
+    let audioCtx = null;
+
+    // Inicialização do AudioContext do navegador (Web Audio API para som de aeroporto impecável e autônomo)
+    function getAudioContext() {
+      if (!audioCtx) {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (AudioContextClass) {
+          audioCtx = new AudioContextClass();
+        }
+      }
+      if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      return audioCtx;
+    }
+
+    // Sinal sonoro característico de chamada de aeroporto / estação (Ding-Dong harmônico / Chime bi-tom suave)
+    // Frequências clássicas: F5 (~698.46 Hz) seguido de C5 (~523.25 Hz) ou G4 -> C5
+    function playAirportChime(force) {
+      if (!soundEnabled && !force) return;
+      try {
+        const ctx = getAudioContext();
+        if (!ctx) return;
+
+        const now = ctx.currentTime;
+
+        // Função auxiliar para tocar uma nota harmônica tubular tipo chime de aeroporto
+        function playChimeTone(freq, startTime, duration) {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, startTime);
+
+          // Envelope suave de sino/chime com fade out natural
+          gain.gain.setValueAtTime(0.0001, startTime);
+          gain.gain.linearRampToValueAtTime(0.35, startTime + 0.04);
+          gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
+
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+
+          osc.start(startTime);
+          osc.stop(startTime + duration);
+        }
+
+        // Primeiro tom: F5 (698.46Hz)
+        playChimeTone(698.46, now, 0.7);
+        // Segundo tom: C5 (523.25Hz) com delay característico de aeroporto (300ms)
+        playChimeTone(523.25, now + 0.32, 1.1);
+
+      } catch (err) {
+        console.error("Erro ao reproduzir alerta de áudio:", err);
+      }
+    }
+
+    function toggleSound() {
+      getAudioContext(); // ativa áudio no clique do usuário
+      soundEnabled = !soundEnabled;
+      const btn = document.getElementById('soundToggle');
+      if (soundEnabled) {
+        btn.classList.add('active-sound');
+        btn.innerText = '🔊 Som: Ativado';
+        playAirportChime(true);
+      } else {
+        btn.classList.remove('active-sound');
+        btn.innerText = '🔇 Som: Desativado';
+      }
+    }
+
+    function showAlert(msg) {
+      const banner = document.getElementById('alertBanner');
+      document.getElementById('alertMessage').innerText = msg;
+      banner.style.display = 'flex';
+    }
+
+    function dismissAlert() {
+      document.getElementById('alertBanner').style.display = 'none';
+    }
+
+    function updateMetrics(tickets) {
+      let total = tickets.length;
+      let novo = 0;
+      let atendimento = 0;
+      let pendente = 0;
+
+      tickets.forEach(t => {
+        if (t.status_id === 1) novo++;
+        else if (t.status_id === 2 || t.status_id === 3) atendimento++;
+        else if (t.status_id === 4) pendente++;
+      });
+
+      document.getElementById('countTotal').innerText = total;
+      document.getElementById('countNovo').innerText = novo;
+      document.getElementById('countAtendimento').innerText = atendimento;
+      document.getElementById('countPendente').innerText = pendente;
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById('ticketsBody');
+      const searchTerm = document.getElementById('searchFilter').value.toLowerCase().trim();
+      const statusFilter = document.getElementById('statusFilter').value;
+
+      const filtered = ticketsData.filter(t => {
+        if (statusFilter !== 'ALL' && String(t.status_id) !== statusFilter) {
+          return false;
+        }
+        if (searchTerm) {
+          const matchTitle = t.title.toLowerCase().includes(searchTerm);
+          const matchId = String(t.id).includes(searchTerm);
+          const matchDept = (t.requester_group || '').toLowerCase().includes(searchTerm);
+          const matchCat = (t.category || '').toLowerCase().includes(searchTerm);
+          return matchTitle || matchId || matchDept || matchCat;
+        }
+        return true;
+      });
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="empty-state">Nenhum chamado encontrado com os filtros selecionados.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = filtered.map(t => {
+        let statusBadgeClass = 'badge-outro';
+        if (t.status_id === 1) statusBadgeClass = 'badge-novo';
+        else if (t.status_id === 2 || t.status_id === 3) statusBadgeClass = 'badge-atendimento';
+        else if (t.status_id === 4) statusBadgeClass = 'badge-pendente';
+        else if (t.status_id === 5) statusBadgeClass = 'badge-solucionado';
+
+        let prioClass = 'badge-prio-baixa';
+        if (t.priority_id >= 4) prioClass = 'badge-prio-alta';
+        else if (t.priority_id === 3) prioClass = 'badge-prio-media';
+
+        const isNewHighlight = t.status_id === 1 ? 'highlight-new' : '';
+
+        return `
+          <tr class="${isNewHighlight}">
+            <td style="font-weight: 700; color: #ffffff;">#${t.id}</td>
+            <td>
+              <a href="${t.url}" target="_blank" class="ticket-link" title="Abrir chamado no GLPI">
+                ${escapeHtml(t.title)}
+              </a>
+            </td>
+            <td>${escapeHtml(t.category || '-')}</td>
+            <td><span class="badge ${statusBadgeClass}">${escapeHtml(t.status)}</span></td>
+            <td><span class="${prioClass}">${escapeHtml(t.priority)}</span></td>
+            <td>${escapeHtml(t.requester_group || '-')}</td>
+            <td style="color: var(--text-muted); font-size: 11px;">${escapeHtml(t.date_mod)}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function escapeHtml(text) {
+      if (!text) return '';
+      return String(text)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    async function loadTickets(manual) {
+      const live = document.getElementById('liveIndicator');
+      live.classList.add('syncing');
+
+      try {
+        const resp = await fetch('/api/tickets?limit=150', { cache: 'no-store' });
+        if (!resp.ok) {
+          throw new Error('Falha HTTP: ' + resp.status);
+        }
+
+        const res = await resp.json();
+        const incomingTickets = res.data || [];
+
+        // Detectar novos chamados
+        let newlyArrived = [];
+        if (!isInitialLoad) {
+          incomingTickets.forEach(t => {
+            if (!knownTicketIDs.has(t.id)) {
+              newlyArrived.push(t);
+            }
+          });
+
+          if (newlyArrived.length > 0) {
+            playAirportChime(false);
+            const first = newlyArrived[0];
+            showAlert(`🚨 ${newlyArrived.length} NOVO(S) CHAMADO(S)! #${first.id} - ${first.title}`);
+          }
+        }
+
+        // Atualizar estado conhecido
+        ticketsData = incomingTickets;
+        knownTicketIDs = new Set(incomingTickets.map(t => t.id));
+        isInitialLoad = false;
+
+        updateMetrics(ticketsData);
+        renderTable();
+
+        document.getElementById('lastSync').innerText = 'Última sinc: ' + (res.time || new Date().toLocaleTimeString());
+
+      } catch (err) {
+        console.error('Erro sincronizando chamados:', err);
+        document.getElementById('lastSync').innerText = 'Erro na sincronização';
+      } finally {
+        live.classList.remove('syncing');
+      }
+    }
+
+    // Inicialização ao carregar página
+    window.addEventListener('DOMContentLoaded', () => {
+      // Registrar clique para desbloquear AudioContext se política do browser restringir
+      document.body.addEventListener('click', () => {
+        getAudioContext();
+      }, { once: true });
+
+      loadTickets();
+      // Polling contínuo a cada 15 segundos
+      setInterval(() => {
+        loadTickets();
+      }, 15000);
+    });
+  </script>
+</body>
+</html>
