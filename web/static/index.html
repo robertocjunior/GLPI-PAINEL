@@ -199,14 +199,17 @@
       }
     }
 
-    /* Badges de Status Limpos */
+    /* Badges de Status Limpos com largura uniforme baseada na maior tag */
     .badge {
       display: inline-block;
-      padding: 5px 12px;
+      width: 110px;
+      text-align: center;
+      padding: 5px 0;
       font-size: 14px;
       font-weight: 800;
       text-transform: uppercase;
       letter-spacing: 0.5px;
+      box-sizing: border-box;
     }
 
     .badge-novo { background-color: #1f6feb; color: #ffffff; }
