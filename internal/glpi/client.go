@@ -120,27 +120,11 @@ func (c *Client) FetchTickets(ctx context.Context, limit int) ([]Ticket, error) 
 		}
 	}()
 
-	// 2. Montar Critérios de Busca (Fila de Sistemas Otimizada)
+	// 2. Montar Critérios de Busca (Apenas status não solucionado/não antigo: field 12 = notold)
 	q := url.Values{}
 	q.Set("criteria[0][field]", "12")
 	q.Set("criteria[0][searchtype]", "equals")
 	q.Set("criteria[0][value]", "notold")
-
-	q.Set("criteria[1][field]", "8")
-	q.Set("criteria[1][searchtype]", "equals")
-	q.Set("criteria[1][value]", c.cfg.TechnicalGroup)
-
-	q.Set("criteria[2][field]", "7")
-	q.Set("criteria[2][searchtype]", "notcontains")
-	q.Set("criteria[2][value]", "Holmes")
-
-	q.Set("criteria[3][field]", "7")
-	q.Set("criteria[3][searchtype]", "notcontains")
-	q.Set("criteria[3][value]", "Metadados")
-
-	q.Set("criteria[4][field]", "7")
-	q.Set("criteria[4][searchtype]", "notcontains")
-	q.Set("criteria[4][value]", "Movimentação Funcional")
 
 	q.Set("sort", "19") // Data de Modificação
 	q.Set("order", "DESC")
