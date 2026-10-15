@@ -46,8 +46,10 @@ type Ticket struct {
 	Category       string `json:"category"`
 	TechnicalGroup string `json:"technical_group"`
 	RequesterID    string `json:"requester_id"`
+	RequesterUser  string `json:"requester_user"`
 	RequesterGroup string `json:"requester_group"`
 	DateCreated    string `json:"date_created"`
+	DateCreatedBR  string `json:"date_created_br"`
 	DateMod        string `json:"date_mod"`
 	URL            string `json:"url"`
 }
@@ -148,7 +150,7 @@ func (c *Client) FetchTickets(ctx context.Context, limit int) ([]Ticket, error) 
 	q.Set("range", fmt.Sprintf("0-%d", limit))
 
 	// forcedisplay
-	forcedFields := []string{"1", "2", "3", "4", "7", "8", "10", "12", "15", "19", "71"}
+	forcedFields := []string{"1", "2", "3", "4", "7", "8", "10", "12", "15", "19", "22", "71"}
 	for i, f := range forcedFields {
 		q.Set(fmt.Sprintf("forcedisplay[%d]", i), f)
 	}
@@ -194,6 +196,14 @@ func (c *Client) FetchTickets(ctx context.Context, limit int) ([]Ticket, error) 
 		catClean := strings.TrimPrefix(cat, "Protheus > ")
 		reqGrpClean := strings.TrimPrefix(reqGrp, "Departamentos > ")
 
+		rawDateCreated := parseString(item["15"])
+		dateCreatedBR := formatDateBR(rawDateCreated)
+
+		reqUser := parseString(item["22"])
+		if reqUser == "" {
+			reqUser = parseString(item["4"])
+		}
+
 		ticketURL := fmt.Sprintf("%s/front/ticket.form.php?id=%d", c.cfg.GlpiURL, idVal)
 
 		tickets = append(tickets, Ticket{
@@ -207,8 +217,10 @@ func (c *Client) FetchTickets(ctx context.Context, limit int) ([]Ticket, error) 
 			Category:       catClean,
 			TechnicalGroup: parseString(item["8"]),
 			RequesterID:    parseString(item["4"]),
+			RequesterUser:  reqUser,
 			RequesterGroup: reqGrpClean,
-			DateCreated:    parseString(item["15"]),
+			DateCreated:    rawDateCreated,
+			DateCreatedBR:  dateCreatedBR,
 			DateMod:        parseString(item["19"]),
 			URL:            ticketURL,
 		})
@@ -261,4 +273,23 @@ func parseString(val interface{}) string {
 	default:
 		return fmt.Sprintf("%v", v)
 	}
+}
+
+func formatDateBR(dateStr string) string {
+	if dateStr == "" {
+		return ""
+	}
+	// Aceita formato padrão do GLPI "2006-01-02 15:04:05" ou "2006-01-02"
+	layouts := []string{"2006-01-02 15:04:05", "2006-01-02"}
+	for _, l := range layouts {
+		if t, err := time.Parse(l, dateStr); err == nil {
+			return t.Format("02/01/2006")
+		}
+	}
+	// Fallback caso venha com traços
+	parts := strings.Split(strings.Split(dateStr, " ")[0], "-")
+	if len(parts) == 3 {
+		return fmt.Sprintf("%s/%s/%s", parts[2], parts[1], parts[0])
+	}
+	return dateStr
 }

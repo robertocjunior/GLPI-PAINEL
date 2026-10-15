@@ -281,11 +281,11 @@
           <tr>
             <th style="width: 80px;">ID</th>
             <th>Título do Chamado</th>
-            <th style="width: 220px;">Categoria</th>
-            <th style="width: 140px;">Status</th>
-            <th style="width: 110px;">Prioridade</th>
-            <th style="width: 250px;">Departamento</th>
-            <th style="width: 170px;">Última Modificação</th>
+            <th style="width: 200px;">Categoria</th>
+            <th style="width: 130px;">Status</th>
+            <th style="width: 100px;">Prioridade</th>
+            <th style="width: 240px;">Usuário Requerente</th>
+            <th style="width: 150px;">Data de Abertura</th>
           </tr>
         </thead>
         <tbody id="ticketsBody">
@@ -434,8 +434,8 @@
             <td>${escapeHtml(t.category || '-')}</td>
             <td><span class="badge ${statusBadgeClass}">${escapeHtml(t.status)}</span></td>
             <td><span class="${prioClass}">${escapeHtml(t.priority)}</span></td>
-            <td>${escapeHtml(t.requester_group || '-')}</td>
-            <td style="color: var(--text-muted); font-size: 13px;">${escapeHtml(t.date_mod)}</td>
+            <td style="color: #c9d1d9;">${escapeHtml(t.requester_user || t.requester_group || '-')}</td>
+            <td style="color: var(--text-muted); font-size: 13px;">${escapeHtml(t.date_created_br || t.date_created)}</td>
           </tr>
         `;
       }).join('');
