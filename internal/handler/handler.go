@@ -48,12 +48,13 @@ func (h *APIHandler) HandleTickets(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{
-		"success":          true,
-		"count":            len(tickets),
-		"time":             time.Now().Format("15:04:05"),
-		"refresh_interval": h.Config.RefreshIntervalSec,
-		"has_custom_sound": h.Config.NotificationSoundURL != "",
-		"data":             tickets,
+		"success":            true,
+		"count":              len(tickets),
+		"time":               time.Now().Format("15:04:05"),
+		"refresh_interval":   h.Config.RefreshIntervalSec,
+		"has_custom_sound":   h.Config.NotificationSoundURL != "",
+		"has_critical_sound": h.Config.CriticalSoundURL != "",
+		"data":               tickets,
 	})
 }
 

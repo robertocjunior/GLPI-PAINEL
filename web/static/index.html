@@ -342,9 +342,11 @@
     }
 
     let customAudioElement = null;
+    let criticalAudioElement = null;
     let hasCustomSoundConfigured = false;
+    let hasCriticalSoundConfigured = false;
 
-    // Inicializa ou retorna o elemento de áudio para o som customizado
+    // Retorna o elemento de áudio para o som customizado padrão
     function getCustomAudio() {
       if (!customAudioElement) {
         customAudioElement = new Audio('/api/sound/notification.mp3');
@@ -353,11 +355,43 @@
       return customAudioElement;
     }
 
-    // Sinal sonoro de notificação: toca o MP3 customizado se disponível, senão o chime sintetizado
-    function playAirportChime(force) {
+    // Retorna o elemento de áudio para o som crítico/muito alto
+    function getCriticalAudio() {
+      if (!criticalAudioElement) {
+        criticalAudioElement = new Audio('/api/sound/critical.mp3');
+        criticalAudioElement.preload = 'auto';
+      }
+      return criticalAudioElement;
+    }
+
+    // Sinal sonoro de notificação: decide entre crítico ou normal
+    function playNotificationSound(isCritical, force) {
       if (!soundEnabled && !force) return;
 
-      // Se há som customizado (.mp3 baixado pelo backend), tenta tocar
+      if (isCritical) {
+        // Tenta tocar MP3 crítico se configurado
+        if (hasCriticalSoundConfigured) {
+          try {
+            const audio = getCriticalAudio();
+            audio.currentTime = 0;
+            const playPromise = audio.play();
+            if (playPromise !== undefined) {
+              playPromise.catch(err => {
+                console.warn("Falha ao reproduzir MP3 crítico, usando sintetizador fallback:", err);
+                playSynthesizedCriticalAlert();
+              });
+            }
+            return;
+          } catch (err) {
+            console.warn("Erro ao iniciar áudio crítico MP3:", err);
+          }
+        }
+        // Fallback crítico sintetizado (duplo bip urgente e estridente)
+        playSynthesizedCriticalAlert();
+        return;
+      }
+
+      // Som normal (MP3 customizado se configurado, senão chime clássico)
       if (hasCustomSoundConfigured) {
         try {
           const audio = getCustomAudio();
@@ -427,17 +461,55 @@
       }
     }
 
+    // Alerta sintetizado de emergência para chamados críticos (pulsos de alta frequência)
+    function playSynthesizedCriticalAlert() {
+      try {
+        const ctx = getAudioContext();
+        if (!ctx) return;
+
+        const now = ctx.currentTime;
+
+        function playBip(freq, startTime, duration) {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(freq, startTime);
+
+          gain.gain.setValueAtTime(0.001, startTime);
+          gain.gain.linearRampToValueAtTime(0.35, startTime + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+
+          osc.start(startTime);
+          osc.stop(startTime + duration);
+        }
+
+        // Três bips rápidos e agudos estilo alarme de emergência
+        playBip(880, now, 0.22);
+        playBip(880, now + 0.28, 0.22);
+        playBip(1174.66, now + 0.56, 0.40);
+
+      } catch (err) {
+        console.error("Erro ao reproduzir alerta crítico:", err);
+      }
+    }
+
     function toggleSound() {
       getAudioContext();
       if (hasCustomSoundConfigured) {
         getCustomAudio();
+      }
+      if (hasCriticalSoundConfigured) {
+        getCriticalAudio();
       }
       soundEnabled = !soundEnabled;
       const btn = document.getElementById('soundToggle');
       if (soundEnabled) {
         btn.classList.add('active-sound');
         btn.innerText = 'Som Ativo';
-        playAirportChime(true);
+        playNotificationSound(false, true);
       } else {
         btn.classList.remove('active-sound');
         btn.innerText = 'Som Mudo';
@@ -538,7 +610,10 @@
           });
 
           if (newlyArrived.length > 0) {
-            playAirportChime(false);
+            // Verifica se algum dos novos chamados tem prioridade crítica / muito alta (>= 5)
+            const hasCritical = newlyArrived.some(t => t.priority_id >= 5);
+            playNotificationSound(hasCritical, false);
+
             // Armazena os novos IDs que dispararam o som: ficam em destaque ate a proxima atualizacao que trouxer novos chamados com som
             recentNewTicketIDs = new Set(newlyArrived.map(t => t.id));
           }
@@ -556,6 +631,13 @@
           hasCustomSoundConfigured = !!res.has_custom_sound;
           if (hasCustomSoundConfigured) {
             getCustomAudio();
+          }
+        }
+
+        if (res.has_critical_sound !== undefined) {
+          hasCriticalSoundConfigured = !!res.has_critical_sound;
+          if (hasCriticalSoundConfigured) {
+            getCriticalAudio();
           }
         }
 

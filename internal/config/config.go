@@ -17,6 +17,7 @@ type Config struct {
 	TechnicalGroup string // ID ou nome do grupo técnico (padrão "1" para Sistemas)
 	RefreshIntervalSec int // Intervalo de polling no frontend
 	NotificationSoundURL string // URL opcional de arquivo de som .mp3 para novos chamados
+	CriticalSoundURL     string // URL opcional de arquivo de som .mp3 para chamados críticos/muito alta
 
 	// Logs
 	LogMaxSize int
@@ -55,6 +56,7 @@ func Load() (*Config, error) {
 	logAge, _ := strconv.Atoi(os.Getenv("LOG_MAX_AGE_DAYS"))
 
 	soundURL := strings.TrimSpace(os.Getenv("NOTIFICATION_SOUND_URL"))
+	critSoundURL := strings.TrimSpace(os.Getenv("CRITICAL_SOUND_URL"))
 
 	cfg := &Config{
 		Port:                 port,
@@ -64,6 +66,7 @@ func Load() (*Config, error) {
 		TechnicalGroup:       group,
 		RefreshIntervalSec:   refreshSec,
 		NotificationSoundURL: soundURL,
+		CriticalSoundURL:     critSoundURL,
 		LogMaxSize:           logSize,
 		LogMaxAge:            logAge,
 	}
