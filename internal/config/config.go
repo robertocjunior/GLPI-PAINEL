@@ -64,6 +64,9 @@ func Load() (*Config, error) {
 
 	soundURL := strings.TrimSpace(os.Getenv("NOTIFICATION_SOUND_URL"))
 	critSoundURL := strings.TrimSpace(os.Getenv("CRITICAL_SOUND_URL"))
+	if critSoundURL == "" {
+		critSoundURL = "https://www.myinstants.com/media/sounds/airport-announcement-starting.mp3"
+	}
 	catSoundsRaw := strings.TrimSpace(os.Getenv("CATEGORY_SOUNDS"))
 	catSounds := parseCategorySounds(catSoundsRaw)
 
