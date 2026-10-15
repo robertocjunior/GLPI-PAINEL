@@ -649,9 +649,9 @@
         `;
       }).join('');
 
-      // Renderiza lista inferior de chamados críticos / muito alta (priority_id >= 5)
+      // Renderiza lista inferior de chamados de prioridade alta para cima (priority_id >= 4)
       const criticalTbody = document.getElementById('criticalTicketsBody');
-      const criticalTickets = ticketsData.filter(t => t.priority_id >= 5);
+      const criticalTickets = ticketsData.filter(t => t.priority_id >= 4);
 
       if (criticalTickets.length > 0) {
         criticalTbody.innerHTML = criticalTickets.map(t => {
@@ -672,7 +672,7 @@
         criticalTbody.innerHTML = `
           <tr>
             <td colspan="4" class="empty-state" style="padding: 16px; font-size: 15px; color: #ff7b72;">
-              Nenhum chamado com prioridade Muito Alta ou Crítica em aberto no momento.
+              Nenhum chamado com prioridade Alta, Muito Alta ou Crítica em aberto no momento.
             </td>
           </tr>
         `;
@@ -710,8 +710,8 @@
           });
 
           if (newlyArrived.length > 0) {
-            // Verifica se algum dos novos chamados tem prioridade crítica / muito alta (>= 5)
-            const hasCritical = newlyArrived.some(t => t.priority_id >= 5);
+            // Verifica se algum dos novos chamados tem prioridade alta para cima (>= 4)
+            const hasCritical = newlyArrived.some(t => t.priority_id >= 4);
             playNotificationSound(hasCritical, false);
 
             // Armazena os novos IDs que dispararam o som: ficam em destaque ate a proxima atualizacao que trouxer novos chamados com som
