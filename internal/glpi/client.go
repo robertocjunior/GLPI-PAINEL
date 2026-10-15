@@ -19,7 +19,7 @@ import (
 
 var statusMap = map[int]string{
 	1: "Novo",
-	2: "Em atendimento (atribuído)",
+	2: "Atribuído",
 	3: "Em atendimento (planejado)",
 	4: "Pendente",
 	5: "Solucionado",
