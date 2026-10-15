@@ -369,7 +369,7 @@
     </div>
 
     <!-- Tabela de Chamados Críticos / Muito Alta (Sem título para otimizar espaço) -->
-    <div id="criticalTableContainer" class="critical-table-container" style="display: none;">
+    <div id="criticalTableContainer" class="critical-table-container">
       <table>
         <thead>
           <tr>
@@ -380,6 +380,11 @@
           </tr>
         </thead>
         <tbody id="criticalTicketsBody">
+          <tr>
+            <td colspan="4" class="empty-state" style="padding: 20px; font-size: 16px; color: #ff7b72;">
+              Nenhum chamado crítico ou muito alto no momento.
+            </td>
+          </tr>
         </tbody>
       </table>
     </div>
@@ -645,12 +650,10 @@
       }).join('');
 
       // Renderiza lista inferior de chamados críticos / muito alta (priority_id >= 5)
-      const criticalContainer = document.getElementById('criticalTableContainer');
       const criticalTbody = document.getElementById('criticalTicketsBody');
       const criticalTickets = ticketsData.filter(t => t.priority_id >= 5);
 
       if (criticalTickets.length > 0) {
-        criticalContainer.style.display = 'block';
         criticalTbody.innerHTML = criticalTickets.map(t => {
           return `
             <tr>
@@ -666,8 +669,13 @@
           `;
         }).join('');
       } else {
-        criticalContainer.style.display = 'none';
-        criticalTbody.innerHTML = '';
+        criticalTbody.innerHTML = `
+          <tr>
+            <td colspan="4" class="empty-state" style="padding: 16px; font-size: 15px; color: #ff7b72;">
+              Nenhum chamado com prioridade Muito Alta ou Crítica em aberto no momento.
+            </td>
+          </tr>
+        `;
       }
     }
 
