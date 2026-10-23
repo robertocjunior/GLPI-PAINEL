@@ -15,3 +15,21 @@ func TestDecodeHTMLEntities(t *testing.T) {
 		}
 	}
 }
+
+func TestExtractLastCategory(t *testing.T) {
+	cases := map[string]string{
+		"BackOffice > Fiscal e tributário > Transmissão":            "Transmissão",
+		"Protheus > BackOffice > Fiscal e tributário > Transmissão": "Transmissão",
+		"Transmissão":                                               "Transmissão",
+		"Hardware > Computador":                                     "Computador",
+		"Equipamentos e Acessórios > Perda / Roubo":                 "Perda / Roubo",
+		"A > B > ":                                                  "B",
+		"":                                                          "",
+		"   ":                                                       "",
+	}
+	for in, want := range cases {
+		if got := extractLastCategory(in); got != want {
+			t.Errorf("extractLastCategory(%q) = %q, want %q", in, got, want)
+		}
+	}
+}

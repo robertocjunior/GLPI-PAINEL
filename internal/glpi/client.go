@@ -203,7 +203,7 @@ func (c *Client) FetchTickets(ctx context.Context, limit int) ([]Ticket, error) 
 
 		cat := parseString(item["7"])
 		reqGrp := parseString(item["71"])
-		catClean := strings.TrimPrefix(cat, "Protheus > ")
+		catClean := extractLastCategory(cat)
 		reqGrpClean := strings.TrimPrefix(reqGrp, "Departamentos > ")
 
 		rawDateCreated := parseString(item["15"])
@@ -316,6 +316,22 @@ func decodeHTMLEntities(s string) string {
 		s = decoded
 	}
 	return s
+}
+
+// extractLastCategory retorna apenas o último nível da hierarquia de categorias (ex: "Protheus > BackOffice > Fiscal > Transmissão" -> "Transmissão").
+func extractLastCategory(cat string) string {
+	cat = strings.TrimSpace(cat)
+	if cat == "" {
+		return ""
+	}
+	parts := strings.Split(cat, ">")
+	for i := len(parts) - 1; i >= 0; i-- {
+		part := strings.TrimSpace(parts[i])
+		if part != "" {
+			return part
+		}
+	}
+	return cat
 }
 
 func formatDateBR(dateStr string) string {
