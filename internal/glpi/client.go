@@ -205,9 +205,6 @@ func (c *Client) FetchTickets(ctx context.Context, limit int) ([]Ticket, error) 
 		reqUserDisplayName := "-"
 		if reqMail != "" {
 			reqUserDisplayName = formatDisplayName(reqMail)
-			if strings.Contains(strings.ToLower(reqUserDisplayName), "barbara") || strings.Contains(strings.ToLower(reqUserDisplayName), "bárbara") {
-				reqUserDisplayName = "Não é Bárbara"
-			}
 			if reqID != "" {
 				c.userCache[reqID] = reqUserDisplayName
 			}
@@ -402,24 +399,15 @@ func (c *Client) getUserName(ctx context.Context, sessionToken, userID string) s
 	if userID == "" || userID == "-" || userID == "0" {
 		return "-"
 	}
-	if userID == "11" {
-		return "Não é Bárbara"
-	}
 	if name, ok := c.userCache[userID]; ok && name != "" {
 		return name
 	}
 	fetched := c.fetchUserName(ctx, sessionToken, userID)
 	if fetched != "" && fetched != userID {
-		if strings.Contains(strings.ToLower(fetched), "bárbara") || strings.Contains(strings.ToLower(fetched), "barbara") {
-			fetched = "Não é Bárbara"
-		}
 		c.userCache[userID] = fetched
 		return fetched
 	}
 	formatted := formatDisplayName(userID)
-	if strings.Contains(strings.ToLower(formatted), "bárbara") || strings.Contains(strings.ToLower(formatted), "barbara") {
-		formatted = "Não é Bárbara"
-	}
 	c.userCache[userID] = formatted
 	return formatted
 }
@@ -428,9 +416,6 @@ func (c *Client) getUserName(ctx context.Context, sessionToken, userID string) s
 func (c *Client) fetchUserName(ctx context.Context, sessionToken, userID string) string {
 	if userID == "" || userID == "-" || userID == "0" {
 		return "-"
-	}
-	if userID == "11" {
-		return "Não é Bárbara"
 	}
 	apiURL := fmt.Sprintf("%s/apirest.php/User/%s", c.cfg.GlpiURL, userID)
 	req, err := http.NewRequestWithContext(ctx, "GET", apiURL, nil)
@@ -459,7 +444,6 @@ func (c *Client) fetchUserName(ctx context.Context, sessionToken, userID string)
 		return userID
 	}
 
-	result := userID
 	fn := strings.TrimSpace(u.Firstname)
 	rn := strings.TrimSpace(u.Realname)
 	if fn != "" || rn != "" {
@@ -473,18 +457,17 @@ func (c *Client) fetchUserName(ctx context.Context, sessionToken, userID string)
 			if (lastLower == "junior" || lastLower == "júnior" || lastLower == "filho" || lastLower == "neto" || lastLower == "sobrinho") && len(rnParts) > 1 {
 				last = rnParts[len(rnParts)-2] + " " + last
 			}
-			result = fn + " " + last
-		} else if fn != "" {
-			result = fn
-		} else {
-			result = rn
+			return fn + " " + last
 		}
-	} else if u.Name != "" {
-		result = formatDisplayName(u.Name)
+		if fn != "" {
+			return fn
+		}
+		return rn
 	}
 
-	if strings.Contains(strings.ToLower(result), "bárbara") || strings.Contains(strings.ToLower(result), "barbara") {
-		return "Não é Bárbara"
+	if u.Name != "" {
+		return formatDisplayName(u.Name)
 	}
-	return result
+
+	return userID
 }
