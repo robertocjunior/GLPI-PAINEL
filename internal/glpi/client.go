@@ -77,7 +77,7 @@ func NewClient(cfg *config.Config) *Client {
 		},
 		userCache: map[string]string{
 			"20":  "Roberto Casali",
-			"11":  "Bárbara Souza",
+			"11":  "none",
 			"18":  "Delcio Matos",
 			"10":  "Wesley Benedito",
 			"19":  "Augusto Correia",
