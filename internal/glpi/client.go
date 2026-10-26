@@ -77,7 +77,7 @@ func NewClient(cfg *config.Config) *Client {
 		},
 		userCache: map[string]string{
 			"20":  "Roberto Casali",
-			"11":  "Delcio Matos",
+			"11":  "Bárbara Souza",
 			"18":  "Delcio Matos",
 			"10":  "Wesley Benedito",
 			"19":  "Augusto Correia",
@@ -222,7 +222,13 @@ func (c *Client) FetchTickets(ctx context.Context, limit int) ([]Ticket, error) 
 			if name, ok := c.userCache[firstTechID]; ok && name != "" {
 				assignedUserName = name
 			} else {
-				assignedUserName = formatDisplayName(firstTechID)
+				fetchedName := c.fetchUserName(ctx, sessionToken, firstTechID)
+				if fetchedName != "" && fetchedName != firstTechID {
+					c.userCache[firstTechID] = fetchedName
+					assignedUserName = fetchedName
+				} else {
+					assignedUserName = formatDisplayName(firstTechID)
+				}
 			}
 		}
 
@@ -399,4 +405,46 @@ func parseFirstTechID(val interface{}) string {
 		}
 	}
 	return ""
+}
+
+// fetchUserName busca os dados do usuário na API do GLPI caso o ID não esteja no cache local.
+func (c *Client) fetchUserName(ctx context.Context, sessionToken, userID string) string {
+	if userID == "" {
+		return "-"
+	}
+	apiURL := fmt.Sprintf("%s/apirest.php/User/%s", c.cfg.GlpiURL, userID)
+	req, err := http.NewRequestWithContext(ctx, "GET", apiURL, nil)
+	if err != nil {
+		return userID
+	}
+	req.Header.Set("App-Token", c.cfg.GlpiAppToken)
+	req.Header.Set("Session-Token", sessionToken)
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return userID
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return userID
+	}
+
+	var u struct {
+		Name      string `json:"name"`
+		Firstname string `json:"firstname"`
+		Realname  string `json:"realname"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&u); err != nil {
+		return userID
+	}
+
+	if u.Name != "" {
+		return formatDisplayName(u.Name)
+	}
+	fullName := strings.TrimSpace(u.Firstname + " " + u.Realname)
+	if fullName != "" {
+		return fullName
+	}
+	return userID
 }
