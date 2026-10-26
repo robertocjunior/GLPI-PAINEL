@@ -75,16 +75,7 @@ func NewClient(cfg *config.Config) *Client {
 			Transport: tr,
 			Timeout:   20 * time.Second,
 		},
-		userCache: map[string]string{
-			"20":  "Roberto Casali",
-			"11":  "none",
-			"18":  "Delcio Matos",
-			"10":  "Wesley Benedito",
-			"19":  "Augusto Correia",
-			"16":  "Victor Menez",
-			"166": "Arthur Salles",
-			"9":   "Luan Costa",
-		},
+		userCache: make(map[string]string),
 	}
 }
 
@@ -209,27 +200,23 @@ func (c *Client) FetchTickets(ctx context.Context, limit int) ([]Ticket, error) 
 		rawDateCreated := parseString(item["15"])
 		dateCreatedBR := formatDateBR(rawDateCreated)
 
-		reqUser := parseString(item["22"])
-		if reqUser == "" {
-			reqUser = parseString(item["4"])
+		reqMail := parseString(item["22"])
+		reqID := parseString(item["4"])
+		reqUserDisplayName := "-"
+		if reqMail != "" {
+			reqUserDisplayName = formatDisplayName(reqMail)
+			if reqID != "" {
+				c.userCache[reqID] = reqUserDisplayName
+			}
+		} else if reqID != "" {
+			reqUserDisplayName = c.getUserName(ctx, sessionToken, reqID)
 		}
-		reqUserDisplayName := formatDisplayName(reqUser)
 
 		// Extrai o primeiro usuário atribuído (field 5), ignorando grupos
 		firstTechID := parseFirstTechID(item["5"])
 		assignedUserName := "-"
 		if firstTechID != "" {
-			if name, ok := c.userCache[firstTechID]; ok && name != "" {
-				assignedUserName = name
-			} else {
-				fetchedName := c.fetchUserName(ctx, sessionToken, firstTechID)
-				if fetchedName != "" && fetchedName != firstTechID {
-					c.userCache[firstTechID] = fetchedName
-					assignedUserName = fetchedName
-				} else {
-					assignedUserName = formatDisplayName(firstTechID)
-				}
-			}
+			assignedUserName = c.getUserName(ctx, sessionToken, firstTechID)
 		}
 
 		ticketURL := fmt.Sprintf("%s/front/ticket.form.php?id=%d", c.cfg.GlpiURL, idVal)
@@ -407,9 +394,27 @@ func parseFirstTechID(val interface{}) string {
 	return ""
 }
 
-// fetchUserName busca os dados do usuário na API do GLPI caso o ID não esteja no cache local.
+// getUserName retorna o nome formatado do usuário a partir do cache em memória ou consultando a API do GLPI.
+func (c *Client) getUserName(ctx context.Context, sessionToken, userID string) string {
+	if userID == "" || userID == "-" || userID == "0" {
+		return "-"
+	}
+	if name, ok := c.userCache[userID]; ok && name != "" {
+		return name
+	}
+	fetched := c.fetchUserName(ctx, sessionToken, userID)
+	if fetched != "" && fetched != userID {
+		c.userCache[userID] = fetched
+		return fetched
+	}
+	formatted := formatDisplayName(userID)
+	c.userCache[userID] = formatted
+	return formatted
+}
+
+// fetchUserName busca os dados cadastrais do usuário diretamente na API do GLPI.
 func (c *Client) fetchUserName(ctx context.Context, sessionToken, userID string) string {
-	if userID == "" {
+	if userID == "" || userID == "-" || userID == "0" {
 		return "-"
 	}
 	apiURL := fmt.Sprintf("%s/apirest.php/User/%s", c.cfg.GlpiURL, userID)
@@ -439,12 +444,30 @@ func (c *Client) fetchUserName(ctx context.Context, sessionToken, userID string)
 		return userID
 	}
 
+	fn := strings.TrimSpace(u.Firstname)
+	rn := strings.TrimSpace(u.Realname)
+	if fn != "" || rn != "" {
+		if pipeIdx := strings.Index(rn, "|"); pipeIdx != -1 {
+			rn = strings.TrimSpace(rn[:pipeIdx])
+		}
+		if fn != "" && rn != "" {
+			rnParts := strings.Fields(rn)
+			last := rnParts[len(rnParts)-1]
+			lastLower := strings.ToLower(last)
+			if (lastLower == "junior" || lastLower == "júnior" || lastLower == "filho" || lastLower == "neto" || lastLower == "sobrinho") && len(rnParts) > 1 {
+				last = rnParts[len(rnParts)-2] + " " + last
+			}
+			return fn + " " + last
+		}
+		if fn != "" {
+			return fn
+		}
+		return rn
+	}
+
 	if u.Name != "" {
 		return formatDisplayName(u.Name)
 	}
-	fullName := strings.TrimSpace(u.Firstname + " " + u.Realname)
-	if fullName != "" {
-		return fullName
-	}
+
 	return userID
 }
